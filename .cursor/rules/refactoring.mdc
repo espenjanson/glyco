@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+Always follow DRY principles. Create reusable components as often as possible. Never write files longer than 200 lines of code. Always refactor and break out into smaller components in new files if that is the case.

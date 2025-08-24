@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+Use shopify restyle for all components. Never use native components from react-native. If no component exists that seem to match, create a new one (for instance, if a ScrollView is needed, create a ScrollBox) according to the code base.

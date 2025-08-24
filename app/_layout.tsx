@@ -1,29 +1,44 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import { Stack } from "expo-router";
+import { ThemeProvider } from "@shopify/restyle";
+import { theme } from "../theme";
+import { useFonts } from "expo-font";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+  const [fontsLoaded] = useFonts({
+    "Circular-Black": require("../assets/fonts/CircularStd-Black.otf"),
+    "Circular-BlackItalic": require("../assets/fonts/CircularStd-BlackItalic.otf"),
+    "Circular-Bold": require("../assets/fonts/CircularStd-Bold.otf"),
+    "Circular-BoldItalic": require("../assets/fonts/CircularStd-BoldItalic.otf"),
+    "Circular-Book": require("../assets/fonts/CircularStd-Book.otf"),
+    "Circular-BookItalic": require("../assets/fonts/CircularStd-BookItalic.otf"),
+    "Circular-Medium": require("../assets/fonts/CircularStd-Medium.otf"),
+    "Circular-MediumItalic": require("../assets/fonts/CircularStd-MediumItalic.otf"),
   });
 
-  if (!loaded) {
-    // Async font loading only occurs in development.
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
     return null;
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
+    <ThemeProvider theme={theme}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
       </Stack>
-      <StatusBar style="auto" />
     </ThemeProvider>
   );
 }
