@@ -11,6 +11,7 @@ import { FormFooterButtons } from "../sheets/FormFooterButtons";
 import { Box, Column, Row, Text } from "../ui/Box";
 import { Button } from "../ui/Button";
 import { MultilineTextInput } from "../ui/Input";
+import { FoodTimeStep } from "./FoodTimeStep";
 
 interface FoodReviewStepProps {
   closeSheet: () => void;
@@ -80,6 +81,7 @@ export const FoodReviewStep: React.FC<FoodReviewStepProps> = observer(
     return (
       <Column gap="l">
         {/* Meal Summary */}
+        <FoodTimeStep />
         <Box backgroundColor="backgroundSecondary" padding="m" borderRadius="m">
           <Column gap="s">
             <Text variant="title">Meal Summary</Text>

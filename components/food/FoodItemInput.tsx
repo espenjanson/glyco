@@ -5,7 +5,6 @@ import { useFoodStore } from "../../stores/StoreProvider";
 import { Box, Column, Row, Text } from "../ui/Box";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
-import { FoodTimeStep } from "./FoodTimeStep";
 import { UserFoodSuggestions } from "./UserFoodSuggestions";
 
 interface FoodItemInputProps {}
@@ -26,7 +25,6 @@ export const FoodItemInput: React.FC<FoodItemInputProps> = observer(() => {
 
   return (
     <Column gap="xl">
-      <FoodTimeStep />
       <Box gap="s">
         <Column gap="xs">
           <Text variant="caption">Food Name</Text>
