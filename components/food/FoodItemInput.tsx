@@ -25,60 +25,62 @@ export const FoodItemInput: React.FC<FoodItemInputProps> = observer(() => {
   };
 
   return (
-    <Column gap="s">
+    <Column gap="xl">
       <FoodTimeStep />
-      <Text variant="title">Add Food Item</Text>
+      <Box gap="s">
+        <Column gap="xs">
+          <Text variant="caption">Food Name</Text>
+          <Input
+            value={foodStore.draftFoodItem.name}
+            onChangeText={(value) => foodStore.setDraftFoodItemName(value)}
+            placeholder="e.g., Apple, Rice, Bread"
+            fontSize={20}
+          />
 
-      <Column gap="xs">
-        <Text variant="caption">Food Name</Text>
-        <Input
-          value={foodStore.draftFoodItem.name}
-          onChangeText={(value) => foodStore.setDraftFoodItemName(value)}
-          placeholder="e.g., Apple, Rice, Bread"
+          {foodStore.showSuggestions && (
+            <UserFoodSuggestions
+              suggestions={foodStore.userFoodSuggestions}
+              onSelect={(suggestion) => {
+                foodStore.selectUserFoodSuggestion(suggestion);
+              }}
+            />
+          )}
+        </Column>
+
+        <Row gap="s">
+          <Box flex={1}>
+            <Text variant="caption">Weight (g)</Text>
+            <Input
+              value={foodStore.draftFoodItem.weight}
+              onChangeText={(value) => foodStore.setDraftFoodItemWeight(value)}
+              keyboardType="numeric"
+              placeholder="100"
+              fontSize={20}
+            />
+          </Box>
+
+          <Box flex={1}>
+            <Text variant="caption">Carbs per 100g</Text>
+            <Input
+              value={foodStore.draftFoodItem.carbsPer100g}
+              onChangeText={(value) =>
+                foodStore.setDraftFoodItemCarbsPer100g(value)
+              }
+              keyboardType="numeric"
+              placeholder="15"
+              fontSize={20}
+            />
+          </Box>
+        </Row>
+        <Button
+          label="Add Food"
+          onPress={handleAddFood}
+          variant="secondary"
+          size="medium"
+          fullWidth
+          disabled={!foodStore.isDraftFoodItemValid}
         />
-
-        {foodStore.showSuggestions && (
-          <UserFoodSuggestions
-            suggestions={foodStore.userFoodSuggestions}
-            onSelect={(suggestion) => {
-              foodStore.selectUserFoodSuggestion(suggestion);
-            }}
-          />
-        )}
-      </Column>
-
-      <Row gap="s">
-        <Box flex={1}>
-          <Text variant="caption">Weight (g)</Text>
-          <Input
-            value={foodStore.draftFoodItem.weight}
-            onChangeText={(value) => foodStore.setDraftFoodItemWeight(value)}
-            keyboardType="numeric"
-            placeholder="100"
-          />
-        </Box>
-
-        <Box flex={1}>
-          <Text variant="caption">Carbs per 100g</Text>
-          <Input
-            value={foodStore.draftFoodItem.carbsPer100g}
-            onChangeText={(value) =>
-              foodStore.setDraftFoodItemCarbsPer100g(value)
-            }
-            keyboardType="numeric"
-            placeholder="15"
-          />
-        </Box>
-      </Row>
-
-      <Button
-        label="Add Food"
-        onPress={handleAddFood}
-        variant="secondary"
-        size="small"
-        fullWidth
-        disabled={!foodStore.isDraftFoodItemValid}
-      />
+      </Box>
     </Column>
   );
 });

@@ -18,33 +18,37 @@ export const FoodItemsList: React.FC<FoodItemsListProps> = ({
 
   return (
     <Column gap="s">
-      <Text variant="title">Added Foods</Text>
-      
-      {foods.map(food => (
-        <Box 
-          key={food.id} 
-          backgroundColor="backgroundSecondary" 
-          padding="m" 
-          borderRadius="m"
-        >
-          <Row justifyContent="space-between" alignItems="center">
-            <Column flex={1}>
-              <Text variant="body">{food.name}</Text>
-              <Text variant="caption" color="textLight">
-                {food.weight}g • {food.totalCarbs.toFixed(1)}g carbs
-              </Text>
-            </Column>
-            <TouchableOpacity onPress={() => onRemoveFood(food.id)}>
-              <Text color="error">Remove</Text>
-            </TouchableOpacity>
-          </Row>
+      <Text variant="caption">Added Foods</Text>
+      <Box gap="m">
+        {foods.map((food) => (
+          <Box
+            key={food.id}
+            backgroundColor="backgroundSecondary"
+            borderBottomWidth={1}
+            borderBottomColor="border"
+            paddingBottom="m"
+          >
+            <Row justifyContent="space-between" alignItems="center">
+              <Column flex={1}>
+                <Text variant="body">{food.name}</Text>
+                <Text variant="caption" color="textLight">
+                  {food.weight}g • {food.totalCarbs.toFixed(1)}g carbs
+                </Text>
+              </Column>
+              <TouchableOpacity onPress={() => onRemoveFood(food.id)}>
+                <Text variant={"bodySmall"} color="error">
+                  Remove
+                </Text>
+              </TouchableOpacity>
+            </Row>
+          </Box>
+        ))}
+
+        <Box>
+          <Text variant="body" color="black" textAlign="right">
+            Total Carbs: {totalCarbs.toFixed(1)}g
+          </Text>
         </Box>
-      ))}
-      
-      <Box backgroundColor="primary" padding="m" borderRadius="m">
-        <Text variant="body" color="white" textAlign="center">
-          Total Carbs: {totalCarbs.toFixed(1)}g
-        </Text>
       </Box>
     </Column>
   );

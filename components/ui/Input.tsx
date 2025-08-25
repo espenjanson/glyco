@@ -76,11 +76,8 @@ const BaseInput: React.FC<
 // Standard text input (44px height)
 export const TextInput: React.FC<BaseInputProps> = (props) => {
   const defaultStyles: Partial<BaseInputProps> = {
-    borderWidth: 1,
-    borderColor: "border",
     borderRadius: "l",
-    paddingHorizontal: "sm",
-    paddingVertical: "sm",
+    fontFamily: "CircularStd-Book",
     fontSize: 16,
     color: "text",
     backgroundColor: "background",
