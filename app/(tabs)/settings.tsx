@@ -1,27 +1,21 @@
 import * as Notifications from "expo-notifications";
-import React, { useCallback, useEffect } from "react";
+import { observer } from "mobx-react-lite";
+import React, { useEffect } from "react";
 import { Alert } from "react-native";
-import { BasalInsulinForm } from "../../components/medical/BasalInsulinForm";
-import { CorrectionInsulinForm } from "../../components/medical/CorrectionInsulinForm";
-import { MealInsulinForm } from "../../components/medical/MealInsulinForm";
 import { AppSettingsForm } from "../../components/settings/AppSettingsForm";
 import { DataExportSection } from "../../components/settings/DataExportSection";
-import { PatientInformationForm } from "../../components/settings/PatientInformationForm";
+import { EditableBasalInsulinForm } from "../../components/settings/EditableBasalInsulinForm";
+import { EditableCorrectionInsulinForm } from "../../components/settings/EditableCorrectionInsulinForm";
+import { EditableMealInsulinForm } from "../../components/settings/EditableMealInsulinForm";
+import { EditablePatientInformationForm } from "../../components/settings/EditablePatientInformationForm";
 import { SettingsActions } from "../../components/settings/SettingsActions";
 import { Column, Container, SafeBox, ScrollBox } from "../../components/ui/Box";
-import { useSettings } from "../../hooks/useSettings";
+import { useSettingsStore } from "../../stores/StoreProvider";
 
-const SettingsTab = React.memo(() => {
-  const {
-    userSettings,
-    medicalSettings,
-    sectionWarnings,
-    loadSettings,
-    updateUserSetting,
-    updateMedicalSetting,
-  } = useSettings();
+const SettingsTab = observer(() => {
+  const settingsStore = useSettingsStore();
 
-  const setupNotifications = useCallback(async () => {
+  const setupNotifications = async () => {
     const { status } = await Notifications.requestPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
@@ -29,14 +23,16 @@ const SettingsTab = React.memo(() => {
         "Please enable notifications for reminders"
       );
     }
-  }, []);
+  };
 
   useEffect(() => {
-    loadSettings();
     setupNotifications();
-  }, [loadSettings, setupNotifications]);
+  }, []);
 
-  if (!userSettings || !medicalSettings) return null;
+  if (!settingsStore.userSettings || !settingsStore.medicalSettings)
+    return null;
+
+  const { userSettings, medicalSettings } = settingsStore;
 
   return (
     <SafeBox>
@@ -45,36 +41,37 @@ const SettingsTab = React.memo(() => {
           <Column>
             <AppSettingsForm
               settings={userSettings}
-              updateSetting={updateUserSetting}
-            />
-            <PatientInformationForm
-              settings={medicalSettings}
-              updateSetting={updateMedicalSetting}
-              warnings={sectionWarnings["Patient Information"] || []}
+              updateSetting={settingsStore.updateUserSetting}
             />
 
-            <BasalInsulinForm
+            <EditablePatientInformationForm
               settings={medicalSettings}
-              updateSetting={updateMedicalSetting}
-              warnings={sectionWarnings["Basal Insulin"] || []}
+              warnings={
+                settingsStore.sectionWarnings["Patient Information"] || []
+              }
             />
 
-            <MealInsulinForm
+            <EditableBasalInsulinForm
               settings={medicalSettings}
-              updateSetting={updateMedicalSetting}
-              warnings={sectionWarnings["Meal Insulin"] || []}
+              warnings={settingsStore.sectionWarnings["Basal Insulin"] || []}
             />
 
-            <CorrectionInsulinForm
+            <EditableMealInsulinForm
               settings={medicalSettings}
-              updateSetting={updateMedicalSetting}
-              warnings={sectionWarnings["Correction Insulin"] || []}
+              warnings={settingsStore.sectionWarnings["Meal Insulin"] || []}
+            />
+
+            <EditableCorrectionInsulinForm
+              settings={medicalSettings}
+              warnings={
+                settingsStore.sectionWarnings["Correction Insulin"] || []
+              }
               glucoseUnit={userSettings.glucoseUnit}
             />
 
             <DataExportSection />
 
-            <SettingsActions onSettingsReloaded={loadSettings} />
+            <SettingsActions onSettingsReloaded={() => {}} />
           </Column>
         </ScrollBox>
       </Container>
@@ -82,6 +79,6 @@ const SettingsTab = React.memo(() => {
   );
 });
 
-SettingsTab.displayName = 'SettingsTab';
+SettingsTab.displayName = "SettingsTab";
 
 export default SettingsTab;

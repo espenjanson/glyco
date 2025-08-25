@@ -129,6 +129,37 @@ const theme = createTheme({
     },
   },
 
+  shadowVariants: {
+    light: {
+      shadowColor: "shadow",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 6,
+      elevation: 3,
+    },
+    default: {
+      shadowColor: "shadow",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    elevated: {
+      shadowColor: "shadow",
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.15,
+      shadowRadius: 12,
+      elevation: 6,
+    },
+    floating: {
+      shadowColor: "shadow",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 10,
+    },
+  },
+
   cardVariants: {
     defaults: {
       backgroundColor: "cardBackground",
@@ -136,7 +167,7 @@ const theme = createTheme({
       marginVertical: "s",
       marginHorizontal: "m",
       borderRadius: "l",
-      shadowColor: "black",
+      shadowColor: "shadow",
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.1,
       shadowRadius: 8,
@@ -148,7 +179,7 @@ const theme = createTheme({
       marginVertical: "s",
       marginHorizontal: "m",
       borderRadius: "l",
-      shadowColor: "black",
+      shadowColor: "shadow",
       shadowOffset: { width: 0, height: 6 },
       shadowOpacity: 0.15,
       shadowRadius: 12,
@@ -162,7 +193,7 @@ const theme = createTheme({
       borderRadius: "l",
       borderWidth: 1,
       borderColor: "border",
-      shadowColor: "black",
+      shadowColor: "shadow",
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.08,
       shadowRadius: 6,
@@ -217,7 +248,7 @@ const theme = createTheme({
       marginHorizontal: { phone: 32, tablet: 96 },
       borderRadius: "round",
       height: "auto",
-      shadowColor: "black",
+      shadowColor: "shadow",
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.15,
       shadowRadius: 8,

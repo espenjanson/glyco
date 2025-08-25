@@ -1,58 +1,68 @@
-import { useCallback, useRef, useState } from 'react';
-import { MedicalSettings, UserSettings } from '../types';
-import { MedicalCalculator } from '../utils/medical';
-import { StorageService } from '../utils/storage';
+import { useRef, useState } from "react";
+import { MedicalSettings, UserSettings } from "../types";
+import { MedicalCalculator } from "../utils/medical";
+import { StorageService } from "../utils/storage";
 
 export const useSettings = () => {
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
-  const [medicalSettings, setMedicalSettings] = useState<MedicalSettings | null>(null);
-  const [sectionWarnings, setSectionWarnings] = useState<Record<string, string[]>>({});
+  const [medicalSettings, setMedicalSettings] =
+    useState<MedicalSettings | null>(null);
+  const [sectionWarnings, setSectionWarnings] = useState<
+    Record<string, string[]>
+  >({});
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previousUserSettingsRef = useRef<UserSettings | null>(null);
   const previousMedicalSettingsRef = useRef<MedicalSettings | null>(null);
 
-  const loadSettings = useCallback(async () => {
-    const userSettingsData = await StorageService.getUserSettings();
-    const medicalSettingsData = await StorageService.getMedicalSettings();
+  const loadSettings = () => {
+    const userSettingsData = StorageService.getUserSettings();
+    const medicalSettingsData = StorageService.getMedicalSettings();
     setUserSettings(userSettingsData);
     setMedicalSettings(medicalSettingsData);
     previousUserSettingsRef.current = userSettingsData;
     previousMedicalSettingsRef.current = medicalSettingsData;
     setSectionWarnings({});
-  }, []);
+  };
 
-  const autoSave = useCallback(async (settings: {
+  const autoSave = (settings: {
     user?: UserSettings;
     medical?: MedicalSettings;
   }) => {
     try {
       if (settings.user) {
-        await StorageService.saveUserSettings(settings.user);
+        StorageService.saveUserSettings(settings.user);
         previousUserSettingsRef.current = settings.user;
       }
       if (settings.medical) {
-        await StorageService.saveMedicalSettings(settings.medical);
+        StorageService.saveMedicalSettings(settings.medical);
         previousMedicalSettingsRef.current = settings.medical;
 
-        const validation = MedicalCalculator.validateMedicalSettings(settings.medical);
+        const validation = MedicalCalculator.validateMedicalSettings(
+          settings.medical
+        );
         setSectionWarnings(validation.warningsBySection);
       }
     } catch (error) {
       console.error("Auto-save failed:", error);
     }
-  }, []);
+  };
 
-  const updateUserSetting = useCallback(<K extends keyof UserSettings>(
+  const updateUserSetting = <K extends keyof UserSettings>(
     key: K,
     value: UserSettings[K]
   ) => {
-    setUserSettings(currentSettings => {
+    setUserSettings((currentSettings) => {
       if (!currentSettings) return currentSettings;
 
       const oldValue = currentSettings[key];
       const newSettings = { ...currentSettings, [key]: value };
 
-      StorageService.saveSettingsChange("App Settings", String(key), oldValue, value);
+      StorageService.saveSettingsChange(
+        "App Settings",
+        String(key),
+        oldValue,
+        value
+      );
 
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
@@ -63,17 +73,18 @@ export const useSettings = () => {
 
       return newSettings;
     });
-  }, [autoSave]);
+  };
 
-  const updateMedicalSetting = useCallback((path: string[], value: any) => {
-    setMedicalSettings(currentSettings => {
+  const updateMedicalSetting = (path: string[], value: any) => {
+    setMedicalSettings((currentSettings) => {
       if (!currentSettings) return currentSettings;
 
       let oldCurrent = currentSettings;
       for (let i = 0; i < path.length - 1; i++) {
         oldCurrent = oldCurrent[path[i] as keyof typeof oldCurrent] as any;
       }
-      const oldValue = oldCurrent[path[path.length - 1] as keyof typeof oldCurrent];
+      const oldValue =
+        oldCurrent[path[path.length - 1] as keyof typeof oldCurrent];
 
       const newSettings = JSON.parse(JSON.stringify(currentSettings));
       let current = newSettings;
@@ -107,7 +118,7 @@ export const useSettings = () => {
 
       return newSettings;
     });
-  }, [autoSave]);
+  };
 
   return {
     userSettings,

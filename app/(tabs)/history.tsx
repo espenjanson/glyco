@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Box, Text, Container, Column, SafeBox, ScrollBox } from '../../components/ui/Box';
-import { StorageService } from '../../utils/storage';
-import { GlucoseReading, UserSettings } from '../../types';
+import { GlucoseReading } from '../../types';
+import { observer } from 'mobx-react-lite';
+import { useGlucoseStore, useSettingsStore } from '../../stores/StoreProvider';
 import { MedicalCalculator } from '../../utils/medical';
 import { StatsCard } from '../../components/history/StatsCard';
 import { ChartCard } from '../../components/history/ChartCard';
@@ -9,30 +10,17 @@ import { RecentEntries } from '../../components/history/RecentEntries';
 import { TimeRangeSelector } from '../../components/history/TimeRangeSelector';
 import { GlucoseInputSheet } from '../../components/sheets/GlucoseInputSheet';
 
-export default function HistoryTab() {
-  const [readings, setReadings] = useState<GlucoseReading[]>([]);
-  const [settings, setSettings] = useState<UserSettings | null>(null);
+const HistoryTab = observer(() => {
+  const glucoseStore = useGlucoseStore();
+  const settingsStore = useSettingsStore();
   const [timeRange, setTimeRange] = useState(7);
   const [showEditSheet, setShowEditSheet] = useState(false);
   const [editingReading, setEditingReading] = useState<GlucoseReading | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    const [glucoseData, userSettings] = await Promise.all([
-      StorageService.getGlucoseReadings(),
-      StorageService.getUserSettings(),
-    ]);
-    setReadings(glucoseData);
-    setSettings(userSettings);
-  };
-
   const getFilteredReadings = () => {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - timeRange);
-    return readings.filter(r => r.timestamp >= cutoff).slice(0, 20);
+    return glucoseStore.readings.filter(r => r.timestamp >= cutoff).slice(0, 20);
   };
 
   const calculateStats = () => {
@@ -43,6 +31,7 @@ export default function HistoryTab() {
     const average = sum / filteredReadings.length;
     
     const inRange = filteredReadings.filter(r => {
+      const settings = settingsStore.userSettings;
       if (!settings) return false;
       return r.value >= settings.targetRangeLow && r.value <= settings.targetRangeHigh;
     }).length;
@@ -64,8 +53,7 @@ export default function HistoryTab() {
   };
 
   const handleGlucoseSaved = (updatedReading: GlucoseReading) => {
-    // Refresh the data after save/update
-    loadData();
+    // Store automatically updates, no manual refresh needed
     setShowEditSheet(false);
     setEditingReading(null);
   };
@@ -96,13 +84,13 @@ export default function HistoryTab() {
               <StatsCard
                 stats={stats}
                 timeRange={timeRange}
-                glucoseUnit={settings?.glucoseUnit}
+                glucoseUnit={settingsStore.glucoseUnit}
               />
             )}
 
             <ChartCard readings={filteredReadings} />
 
-            <RecentEntries readings={readings} onEditReading={handleEditReading} />
+            <RecentEntries readings={glucoseStore.readings} onEditReading={handleEditReading} />
           </Column>
         </ScrollBox>
       </Container>
@@ -119,4 +107,6 @@ export default function HistoryTab() {
       />
     </SafeBox>
   );
-}
+});
+
+export default HistoryTab;

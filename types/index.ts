@@ -25,6 +25,37 @@ export interface InsulinShot {
   injectionSite?: string;
 }
 
+export interface FoodItem {
+  id: string;
+  name: string;
+  weight: number; // in grams
+  carbsPer100g: number; // carbs per 100 grams
+  totalCarbs: number; // calculated: (weight / 100) * carbsPer100g
+}
+
+export interface UserFood {
+  id: string;
+  name: string;
+  carbsPer100g: number;
+  lastUsed: Date;
+  useCount: number;
+}
+
+export interface FoodEntry {
+  id: string;
+  foods: FoodItem[];
+  totalCarbs: number;
+  mealType?: "breakfast" | "lunch" | "dinner" | "eveningSnack";
+  timestamp: Date;
+  notes?: string;
+  insulinCalculation?: {
+    mealInsulin: number;
+    correctionInsulin: number;
+    totalInsulin: number;
+    currentGlucose?: number;
+  };
+}
+
 export interface CarbEntry {
   id: string;
   carbs: number;

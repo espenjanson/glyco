@@ -31,7 +31,6 @@ export const InjectionSiteSelector: React.FC<InjectionSiteSelectorProps> = ({
             borderRadius="m"
             paddingHorizontal="m"
             paddingVertical="s"
-            marginBottom="s"
           >
             <Text 
               variant="bodySmall" 

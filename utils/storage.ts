@@ -1,17 +1,24 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { MMKV } from "react-native-mmkv";
 import {
   CarbEntry,
+  FoodEntry,
   GlucoseReading,
   InsulinShot,
   MedicalSettings,
   SettingsHistoryEntry,
+  UserFood,
   UserSettings,
 } from "../types";
+
+// Initialize MMKV storage
+const storage = new MMKV();
 
 const KEYS = {
   GLUCOSE_READINGS: "glucose_readings",
   INSULIN_SHOTS: "insulin_shots",
   CARB_ENTRIES: "carb_entries",
+  FOOD_ENTRIES: "food_entries",
+  USER_FOODS: "user_foods",
   USER_SETTINGS: "user_settings",
   MEDICAL_SETTINGS: "medical_settings",
   SETTINGS_HISTORY: "settings_history",
@@ -68,9 +75,9 @@ const defaultMedicalSettings: MedicalSettings = {
 };
 
 export const StorageService = {
-  async getGlucoseReadings(): Promise<GlucoseReading[]> {
+  getGlucoseReadings(): GlucoseReading[] {
     try {
-      const data = await AsyncStorage.getItem(KEYS.GLUCOSE_READINGS);
+      const data = storage.getString(KEYS.GLUCOSE_READINGS);
       return data
         ? JSON.parse(data).map((r: any) => ({
             ...r,
@@ -82,28 +89,35 @@ export const StorageService = {
     }
   },
 
-  async saveGlucoseReading(reading: GlucoseReading): Promise<void> {
-    const readings = await this.getGlucoseReadings();
-    readings.unshift(reading);
-    await AsyncStorage.setItem(KEYS.GLUCOSE_READINGS, JSON.stringify(readings));
+  saveGlucoseReading(reading: GlucoseReading): void {
+    const readings = this.getGlucoseReadings();
+    const existingIndex = readings.findIndex(r => r.id === reading.id);
+    if (existingIndex >= 0) {
+      readings[existingIndex] = reading;
+    } else {
+      readings.unshift(reading);
+    }
+    storage.set(KEYS.GLUCOSE_READINGS, JSON.stringify(readings));
   },
-  async updateGlucoseReading(updatedReading: GlucoseReading): Promise<void> {
-    const readings = await this.getGlucoseReadings();
+
+  updateGlucoseReading(updatedReading: GlucoseReading): void {
+    const readings = this.getGlucoseReadings();
     const index = readings.findIndex(r => r.id === updatedReading.id);
     if (index !== -1) {
       readings[index] = updatedReading;
-      await AsyncStorage.setItem(KEYS.GLUCOSE_READINGS, JSON.stringify(readings));
+      storage.set(KEYS.GLUCOSE_READINGS, JSON.stringify(readings));
     }
   },
-  async deleteGlucoseReading(id: string): Promise<void> {
-    const readings = await this.getGlucoseReadings();
+
+  deleteGlucoseReading(id: string): void {
+    const readings = this.getGlucoseReadings();
     const filtered = readings.filter(r => r.id !== id);
-    await AsyncStorage.setItem(KEYS.GLUCOSE_READINGS, JSON.stringify(filtered));
+    storage.set(KEYS.GLUCOSE_READINGS, JSON.stringify(filtered));
   },
 
-  async getInsulinShots(): Promise<InsulinShot[]> {
+  getInsulinShots(): InsulinShot[] {
     try {
-      const data = await AsyncStorage.getItem(KEYS.INSULIN_SHOTS);
+      const data = storage.getString(KEYS.INSULIN_SHOTS);
       return data
         ? JSON.parse(data).map((s: any) => ({
             ...s,
@@ -115,15 +129,26 @@ export const StorageService = {
     }
   },
 
-  async saveInsulinShot(shot: InsulinShot): Promise<void> {
-    const shots = await this.getInsulinShots();
-    shots.unshift(shot);
-    await AsyncStorage.setItem(KEYS.INSULIN_SHOTS, JSON.stringify(shots));
+  saveInsulinShot(shot: InsulinShot): void {
+    const shots = this.getInsulinShots();
+    const existingIndex = shots.findIndex(s => s.id === shot.id);
+    if (existingIndex >= 0) {
+      shots[existingIndex] = shot;
+    } else {
+      shots.unshift(shot);
+    }
+    storage.set(KEYS.INSULIN_SHOTS, JSON.stringify(shots));
   },
 
-  async getCarbEntries(): Promise<CarbEntry[]> {
+  deleteInsulinShot(id: string): void {
+    const shots = this.getInsulinShots();
+    const filtered = shots.filter(s => s.id !== id);
+    storage.set(KEYS.INSULIN_SHOTS, JSON.stringify(filtered));
+  },
+
+  getCarbEntries(): CarbEntry[] {
     try {
-      const data = await AsyncStorage.getItem(KEYS.CARB_ENTRIES);
+      const data = storage.getString(KEYS.CARB_ENTRIES);
       return data
         ? JSON.parse(data).map((c: any) => ({
             ...c,
@@ -135,15 +160,15 @@ export const StorageService = {
     }
   },
 
-  async saveCarbEntry(entry: CarbEntry): Promise<void> {
-    const entries = await this.getCarbEntries();
+  saveCarbEntry(entry: CarbEntry): void {
+    const entries = this.getCarbEntries();
     entries.unshift(entry);
-    await AsyncStorage.setItem(KEYS.CARB_ENTRIES, JSON.stringify(entries));
+    storage.set(KEYS.CARB_ENTRIES, JSON.stringify(entries));
   },
 
-  async getUserSettings(): Promise<UserSettings> {
+  getUserSettings(): UserSettings {
     try {
-      const data = await AsyncStorage.getItem(KEYS.USER_SETTINGS);
+      const data = storage.getString(KEYS.USER_SETTINGS);
       return data
         ? { ...defaultSettings, ...JSON.parse(data) }
         : defaultSettings;
@@ -152,13 +177,13 @@ export const StorageService = {
     }
   },
 
-  async saveUserSettings(settings: UserSettings): Promise<void> {
-    await AsyncStorage.setItem(KEYS.USER_SETTINGS, JSON.stringify(settings));
+  saveUserSettings(settings: UserSettings): void {
+    storage.set(KEYS.USER_SETTINGS, JSON.stringify(settings));
   },
 
-  async getMedicalSettings(): Promise<MedicalSettings> {
+  getMedicalSettings(): MedicalSettings {
     try {
-      const data = await AsyncStorage.getItem(KEYS.MEDICAL_SETTINGS);
+      const data = storage.getString(KEYS.MEDICAL_SETTINGS);
       return data
         ? { ...defaultMedicalSettings, ...JSON.parse(data) }
         : defaultMedicalSettings;
@@ -167,21 +192,21 @@ export const StorageService = {
     }
   },
 
-  async saveMedicalSettings(settings: MedicalSettings): Promise<void> {
-    await AsyncStorage.setItem(KEYS.MEDICAL_SETTINGS, JSON.stringify(settings));
+  saveMedicalSettings(settings: MedicalSettings): void {
+    storage.set(KEYS.MEDICAL_SETTINGS, JSON.stringify(settings));
   },
 
-  async clearUserSettings(): Promise<void> {
-    await AsyncStorage.removeItem(KEYS.USER_SETTINGS);
+  clearUserSettings(): void {
+    storage.delete(KEYS.USER_SETTINGS);
   },
 
-  async clearMedicalSettings(): Promise<void> {
-    await AsyncStorage.removeItem(KEYS.MEDICAL_SETTINGS);
+  clearMedicalSettings(): void {
+    storage.delete(KEYS.MEDICAL_SETTINGS);
   },
 
-  async getSettingsHistory(): Promise<SettingsHistoryEntry[]> {
+  getSettingsHistory(): SettingsHistoryEntry[] {
     try {
-      const data = await AsyncStorage.getItem(KEYS.SETTINGS_HISTORY);
+      const data = storage.getString(KEYS.SETTINGS_HISTORY);
       return data
         ? JSON.parse(data).map((entry: any) => ({
             ...entry,
@@ -193,8 +218,8 @@ export const StorageService = {
     }
   },
 
-  async saveSettingsChange(section: string, field: string, oldValue: any, newValue: any): Promise<void> {
-    const history = await this.getSettingsHistory();
+  saveSettingsChange(section: string, field: string, oldValue: any, newValue: any): void {
+    const history = this.getSettingsHistory();
     const entry: SettingsHistoryEntry = {
       id: Date.now().toString(),
       section,
@@ -210,16 +235,113 @@ export const StorageService = {
     const otherHistory = history.filter(h => h.section !== section);
     const trimmedSectionHistory = sectionHistory.slice(0, 100);
     
-    await AsyncStorage.setItem(KEYS.SETTINGS_HISTORY, JSON.stringify([...trimmedSectionHistory, ...otherHistory]));
+    storage.set(KEYS.SETTINGS_HISTORY, JSON.stringify([...trimmedSectionHistory, ...otherHistory]));
   },
 
-  async removeSettingsHistoryEntry(id: string): Promise<void> {
-    const history = await this.getSettingsHistory();
+  removeSettingsHistoryEntry(id: string): void {
+    const history = this.getSettingsHistory();
     const filtered = history.filter(entry => entry.id !== id);
-    await AsyncStorage.setItem(KEYS.SETTINGS_HISTORY, JSON.stringify(filtered));
+    storage.set(KEYS.SETTINGS_HISTORY, JSON.stringify(filtered));
   },
 
-  async clearSettingsHistory(): Promise<void> {
-    await AsyncStorage.removeItem(KEYS.SETTINGS_HISTORY);
+  clearSettingsHistory(): void {
+    storage.delete(KEYS.SETTINGS_HISTORY);
+  },
+
+  getFoodEntries(): FoodEntry[] {
+    try {
+      const data = storage.getString(KEYS.FOOD_ENTRIES);
+      return data
+        ? JSON.parse(data).map((f: any) => ({
+            ...f,
+            timestamp: new Date(f.timestamp),
+            foods: f.foods || [],
+          }))
+        : [];
+    } catch {
+      return [];
+    }
+  },
+
+  saveFoodEntry(entry: FoodEntry): void {
+    const entries = this.getFoodEntries();
+    const existingIndex = entries.findIndex(e => e.id === entry.id);
+    if (existingIndex >= 0) {
+      entries[existingIndex] = entry;
+    } else {
+      entries.unshift(entry);
+    }
+    storage.set(KEYS.FOOD_ENTRIES, JSON.stringify(entries));
+  },
+
+  deleteFoodEntry(id: string): void {
+    const entries = this.getFoodEntries();
+    const filtered = entries.filter(e => e.id !== id);
+    storage.set(KEYS.FOOD_ENTRIES, JSON.stringify(filtered));
+  },
+
+  getUserFoods(): UserFood[] {
+    try {
+      const data = storage.getString(KEYS.USER_FOODS);
+      return data
+        ? JSON.parse(data).map((f: any) => ({
+            ...f,
+            lastUsed: new Date(f.lastUsed),
+          }))
+        : [];
+    } catch {
+      return [];
+    }
+  },
+
+  saveUserFood(food: UserFood): void {
+    const foods = this.getUserFoods();
+    const existingIndex = foods.findIndex(f => f.name.toLowerCase() === food.name.toLowerCase());
+    
+    if (existingIndex >= 0) {
+      // Update existing food
+      foods[existingIndex] = {
+        ...foods[existingIndex],
+        carbsPer100g: food.carbsPer100g,
+        lastUsed: food.lastUsed,
+        useCount: foods[existingIndex].useCount + 1,
+      };
+    } else {
+      // Add new food
+      foods.unshift(food);
+    }
+    
+    // Sort by use count and last used
+    foods.sort((a, b) => {
+      if (b.useCount !== a.useCount) {
+        return b.useCount - a.useCount;
+      }
+      return b.lastUsed.getTime() - a.lastUsed.getTime();
+    });
+    
+    // Keep only top 100 foods
+    const trimmedFoods = foods.slice(0, 100);
+    storage.set(KEYS.USER_FOODS, JSON.stringify(trimmedFoods));
+  },
+
+  searchUserFoods(query: string): UserFood[] {
+    const foods = this.getUserFoods();
+    const searchTerm = query.toLowerCase();
+    return foods.filter(f => f.name.toLowerCase().includes(searchTerm));
+  },
+
+  deleteUserFood(id: string): void {
+    const foods = this.getUserFoods();
+    const filtered = foods.filter(f => f.id !== id);
+    storage.set(KEYS.USER_FOODS, JSON.stringify(filtered));
+  },
+
+  saveSettingsHistoryEntry(entry: SettingsHistoryEntry): void {
+    const history = this.getSettingsHistory();
+    history.unshift(entry);
+    
+    // Keep only last 200 entries
+    const trimmed = history.slice(0, 200);
+    storage.set(KEYS.SETTINGS_HISTORY, JSON.stringify(trimmed));
   },
 };

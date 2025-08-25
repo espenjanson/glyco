@@ -2,15 +2,18 @@ import React from "react";
 import { Alert } from "react-native";
 import { Column } from "../ui/Box";
 import { Button } from "../ui/Button";
-import { StorageService } from "../../utils/storage";
+import { observer } from "mobx-react-lite";
+import { useSettingsStore } from "../../stores/StoreProvider";
 
 interface SettingsActionsProps {
   onSettingsReloaded: () => void;
 }
 
-export const SettingsActions: React.FC<SettingsActionsProps> = ({
+export const SettingsActions: React.FC<SettingsActionsProps> = observer(({
   onSettingsReloaded,
 }) => {
+  const settingsStore = useSettingsStore();
+
   const handleResetDefaults = () => {
     Alert.alert(
       "Reset Settings",
@@ -20,10 +23,9 @@ export const SettingsActions: React.FC<SettingsActionsProps> = ({
         {
           text: "Reset",
           style: "destructive",
-          onPress: async () => {
+          onPress: () => {
             try {
-              await StorageService.clearMedicalSettings();
-              await StorageService.clearUserSettings();
+              settingsStore.resetToDefaults();
               onSettingsReloaded();
               Alert.alert("Success", "Settings have been reset to defaults");
             } catch {
@@ -45,4 +47,4 @@ export const SettingsActions: React.FC<SettingsActionsProps> = ({
       />
     </Column>
   );
-};
+});

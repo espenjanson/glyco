@@ -1,13 +1,14 @@
 import { TrueSheet } from "@lodev09/react-native-true-sheet";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { observer } from "mobx-react-lite";
+import React, { useEffect, useRef, useState } from "react";
 import { Alert, ScrollView } from "react-native";
-import { TimePickerModal } from "../common/TimePickerModal";
 import { useFormState } from "../../hooks/useFormState";
 import { useTimePicker } from "../../hooks/useTimePicker";
-import { GlucoseReading, GlucoseUnit } from "../../types";
+import { useGlucoseStore, useSettingsStore } from "../../stores/StoreProvider";
+import { GlucoseReading } from "../../types";
 import { GlucoseConverter } from "../../utils/glucose";
 import { InputUtils } from "../../utils/input";
-import { StorageService } from "../../utils/storage";
+import { TimePickerModal } from "../common/TimePickerModal";
 import { Column, ScrollBox, Text } from "../ui/Box";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
@@ -41,238 +42,239 @@ const VALIDATION_RULES = {
 
 const INITIAL_TIME = new Date();
 
-export const GlucoseInputSheet: React.FC<GlucoseInputSheetProps> = React.memo(({
-  isVisible,
-  onClose,
-  onSave,
-  editingReading,
-}) => {
-  const sheetRef = useRef<TrueSheet>(null);
-  const scrollViewRef = useRef<ScrollView>(null);
-  const [userUnit, setUserUnit] = useState<GlucoseUnit>("mg/dL");
-  const [deleting, setDeleting] = useState(false);
+export const GlucoseInputSheet: React.FC<GlucoseInputSheetProps> = observer(
+  ({ isVisible, onClose, onSave, editingReading }) => {
+    const sheetRef = useRef<TrueSheet>(null);
+    const scrollViewRef = useRef<ScrollView>(null);
+    const glucoseStore = useGlucoseStore();
+    const settingsStore = useSettingsStore();
 
-  // Custom hooks
-  const {
-    selectedTime,
-    setSelectedTime,
-    showTimePicker,
-    setShowTimePicker,
-    handleTimeChange,
-    handleTimePickerChange,
-  } = useTimePicker(INITIAL_TIME);
+    const [deleting, setDeleting] = useState(false);
 
-  const {
-    formData,
-    errors,
-    saving,
-    setSaving,
-    updateField,
-    validateForm,
-    resetForm: resetFormData,
-  } = useFormState<GlucoseFormData>(
-    INITIAL_FORM_STATE,
-    VALIDATION_RULES
-  );
+    const userUnit = settingsStore.glucoseUnit;
 
-  const loadUserSettings = useCallback(async () => {
-    const settings = await StorageService.getUserSettings();
-    setUserUnit(settings.glucoseUnit);
-  }, []);
+    // Custom hooks
+    const {
+      selectedTime,
+      setSelectedTime,
+      showTimePicker,
+      setShowTimePicker,
+      handleTimeChange,
+      handleTimePickerChange,
+    } = useTimePicker(INITIAL_TIME);
 
-  const resetForm = useCallback(() => {
-    resetFormData();
-    setSelectedTime(new Date());
-  }, [resetFormData, setSelectedTime]);
+    const {
+      formData,
+      errors,
+      saving,
+      setSaving,
+      updateField,
+      validateForm,
+      resetForm: resetFormData,
+    } = useFormState<GlucoseFormData>(INITIAL_FORM_STATE, VALIDATION_RULES);
 
-  const populateFormForEditing = useCallback(async () => {
-    if (!editingReading) return;
-    
-    const settings = await StorageService.getUserSettings();
-    
-    const displayValue = GlucoseConverter.storageToDisplay(
-      editingReading.value,
-      settings.glucoseUnit
-    );
-    
-    updateField('displayValue', displayValue.toString());
-    updateField('notes', editingReading.notes || '');
-    setSelectedTime(new Date(editingReading.timestamp));
-  }, [editingReading, updateField, setSelectedTime]);
+    const resetForm = () => {
+      resetFormData();
+      setSelectedTime(new Date());
+    };
 
-  useEffect(() => {
-    if (isVisible) {
-      loadUserSettings();
-      if (editingReading) {
-        populateFormForEditing();
-      } else {
-        resetForm();
-      }
-      sheetRef.current?.present();
-    } else {
-      sheetRef.current?.dismiss();
-    }
-  }, [isVisible, editingReading, loadUserSettings, populateFormForEditing, resetForm]);
+    const populateFormForEditing = () => {
+      if (!editingReading) return;
 
-  const handleSave = useCallback(async () => {
-    if (!validateForm()) {
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const numericValue = InputUtils.parseNumber(formData.displayValue, true);
-      const valueInMmol = GlucoseConverter.inputToStorage(
-        numericValue,
+      const displayValue = GlucoseConverter.storageToDisplay(
+        editingReading.value,
         userUnit
       );
 
-      const reading: GlucoseReading = {
-        id: editingReading ? editingReading.id : Date.now().toString(),
-        value: valueInMmol,
-        unit: "mmol/L",
-        timestamp: selectedTime,
-        notes: formData.notes.trim() || undefined,
-      };
+      updateField("displayValue", displayValue.toString());
+      updateField("notes", editingReading.notes || "");
+      setSelectedTime(new Date(editingReading.timestamp));
+    };
 
-      if (editingReading) {
-        await StorageService.updateGlucoseReading(reading);
+    useEffect(() => {
+      if (isVisible) {
+        if (editingReading) {
+          populateFormForEditing();
+        } else {
+          resetForm();
+        }
+        sheetRef.current?.present();
       } else {
-        await StorageService.saveGlucoseReading(reading);
+        sheetRef.current?.dismiss();
       }
-      
-      onSave?.(reading);
+    }, [isVisible]);
 
-      Alert.alert("Success", editingReading ? "Glucose reading updated successfully!" : "Glucose reading saved successfully!");
-      onClose();
-    } catch (error) {
-      Alert.alert("Error", "Failed to save glucose reading.");
-    } finally {
-      setSaving(false);
-    }
-  }, [validateForm, setSaving, formData, userUnit, selectedTime, editingReading, onSave, onClose]);
+    const handleSave = () => {
+      if (!validateForm()) {
+        return;
+      }
 
-  const handleDelete = useCallback(async () => {
-    if (!editingReading) return;
+      setSaving(true);
+      try {
+        const numericValue = InputUtils.parseNumber(
+          formData.displayValue,
+          true
+        );
+        const valueInMmol = GlucoseConverter.inputToStorage(
+          numericValue,
+          userUnit
+        );
 
-    Alert.alert(
-      "Delete Reading",
-      "Are you sure you want to delete this glucose reading? This action cannot be undone.",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            setDeleting(true);
-            try {
-              await StorageService.deleteGlucoseReading(editingReading.id);
-              Alert.alert("Success", "Glucose reading deleted successfully!");
-              onClose();
-            } catch (error) {
-              Alert.alert("Error", "Failed to delete glucose reading.");
-            } finally {
-              setDeleting(false);
-            }
+        const reading: GlucoseReading = {
+          id: editingReading ? editingReading.id : Date.now().toString(),
+          value: valueInMmol,
+          unit: "mmol/L",
+          timestamp: selectedTime,
+          notes: formData.notes.trim() || undefined,
+        };
+
+        if (editingReading) {
+          glucoseStore.updateReading(editingReading.id, reading);
+        } else {
+          glucoseStore.addReading(reading);
+        }
+
+        onSave?.(reading);
+
+        Alert.alert(
+          "Success",
+          editingReading
+            ? "Glucose reading updated successfully!"
+            : "Glucose reading saved successfully!"
+        );
+        onClose();
+      } catch {
+        Alert.alert("Error", "Failed to save glucose reading.");
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    const handleDelete = () => {
+      if (!editingReading) return;
+
+      Alert.alert(
+        "Delete Reading",
+        "Are you sure you want to delete this glucose reading? This action cannot be undone.",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
           },
-        },
-      ]
-    );
-  }, [editingReading, onClose]);
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => {
+              setDeleting(true);
+              try {
+                glucoseStore.deleteReading(editingReading.id);
+                Alert.alert("Success", "Glucose reading deleted successfully!");
+                onClose();
+              } catch {
+                Alert.alert("Error", "Failed to delete glucose reading.");
+              } finally {
+                setDeleting(false);
+              }
+            },
+          },
+        ]
+      );
+    };
 
-  return (
-    <TrueSheet
-      ref={sheetRef}
-      // @ts-ignore
-      scrollRef={scrollViewRef}
-      sizes={["auto"]}
-      cornerRadius={24}
-      onDismiss={onClose}
-    >
-      <ScrollBox ref={scrollViewRef} nestedScrollEnabled>
-        <Column padding="l" gap="l">
-          {/* Header */}
-          <Text variant="title" textAlign="center">
-            {editingReading ? "Edit Glucose Reading" : "Log Glucose Reading"}
-          </Text>
+    return (
+      <TrueSheet
+        ref={sheetRef}
+        // @ts-ignore
+        scrollRef={scrollViewRef}
+        sizes={["auto"]}
+        cornerRadius={24}
+        onDismiss={onClose}
+      >
+        <ScrollBox ref={scrollViewRef} nestedScrollEnabled>
+          <Column padding="l" gap="l">
+            {/* Header */}
+            <Text variant="title" textAlign="center">
+              {editingReading ? "Edit Glucose Reading" : "Log Glucose Reading"}
+            </Text>
 
-          {/* Glucose Value Input */}
-          <Column gap="s">
-            <Text variant="body">Blood Glucose ({userUnit})</Text>
-            <Input
-              value={formData.displayValue}
-              onChangeText={(value) => updateField('displayValue', value)}
-              keyboardType="numeric"
-              placeholder={GlucoseConverter.getPlaceholder(userUnit, "reading")}
-              variant="large"
-            />
-            {errors.displayValue && (
-              <Text variant="caption" color="error">
-                {errors.displayValue}
-              </Text>
-            )}
-          </Column>
-
-          {/* Time Picker */}
-          <TimePickerSection
-            selectedTime={selectedTime}
-            onTimeChange={handleTimeChange}
-            onShowTimePicker={() => setShowTimePicker(true)}
-          />
-
-          {/* Time Picker Modal */}
-          <TimePickerModal
-            visible={showTimePicker}
-            value={selectedTime}
-            onChange={handleTimePickerChange}
-            onClose={() => setShowTimePicker(false)}
-          />
-
-          {/* Notes */}
-          <Column gap="s">
-            <Text variant="body">Notes (Optional)</Text>
-            <Input
-              value={formData.notes}
-              onChangeText={(value) => updateField('notes', value)}
-              placeholder="Add context (before meal, after exercise, etc.)"
-              variant="multiline"
-            />
-          </Column>
-
-          {/* Footer Buttons */}
-          {editingReading ? (
-            <Column gap="m">
-              <Button
-                label="Delete Reading"
-                onPress={handleDelete}
-                variant="danger"
-                loading={deleting}
-                fullWidth
+            {/* Glucose Value Input */}
+            <Column gap="s">
+              <Text variant="body">Blood Glucose ({userUnit})</Text>
+              <Input
+                value={formData.displayValue}
+                onChangeText={(value) => updateField("displayValue", value)}
+                keyboardType="numeric"
+                placeholder={GlucoseConverter.getPlaceholder(
+                  userUnit,
+                  "reading"
+                )}
+                variant="large"
               />
+              {errors.displayValue && (
+                <Text variant="caption" color="error">
+                  {errors.displayValue}
+                </Text>
+              )}
+            </Column>
+
+            {/* Time Picker */}
+            <TimePickerSection
+              selectedTime={selectedTime}
+              onTimeChange={handleTimeChange}
+              onShowTimePicker={() => setShowTimePicker(true)}
+            />
+
+            {/* Time Picker Modal */}
+            <TimePickerModal
+              visible={showTimePicker}
+              value={selectedTime}
+              onChange={handleTimePickerChange}
+              onClose={() => setShowTimePicker(false)}
+            />
+
+            {/* Notes */}
+            <Column gap="s">
+              <Text variant="body">Notes (Optional)</Text>
+              <Input
+                value={formData.notes}
+                onChangeText={(value) => updateField("notes", value)}
+                placeholder="Add context (before meal, after exercise, etc.)"
+                variant="multiline"
+              />
+            </Column>
+
+            {/* Footer Buttons */}
+            {editingReading ? (
+              <Column gap="m">
+                <Button
+                  label="Delete Reading"
+                  onPress={handleDelete}
+                  variant="danger"
+                  loading={deleting}
+                  fullWidth
+                />
+                <SheetFooterButtons
+                  onCancel={onClose}
+                  onSave={handleSave}
+                  saveLabel="Update Reading"
+                  loading={saving}
+                  disabled={!formData.displayValue.trim()}
+                />
+              </Column>
+            ) : (
               <SheetFooterButtons
                 onCancel={onClose}
                 onSave={handleSave}
-                saveLabel="Update Reading"
+                saveLabel="Save Reading"
                 loading={saving}
                 disabled={!formData.displayValue.trim()}
               />
-            </Column>
-          ) : (
-            <SheetFooterButtons
-              onCancel={onClose}
-              onSave={handleSave}
-              saveLabel="Save Reading"
-              loading={saving}
-              disabled={!formData.displayValue.trim()}
-            />
-          )}
-        </Column>
-      </ScrollBox>
-    </TrueSheet>
-  );
-});
+            )}
+          </Column>
+        </ScrollBox>
+      </TrueSheet>
+    );
+  }
+);
 
-GlucoseInputSheet.displayName = 'GlucoseInputSheet';
+GlucoseInputSheet.displayName = "GlucoseInputSheet";

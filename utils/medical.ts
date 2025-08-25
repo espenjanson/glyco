@@ -19,9 +19,9 @@ export const MedicalCalculator = {
   ): InsulinCalculation {
     const { mealInsulin, correctionInsulin } = medicalSettings;
 
-    // Calculate meal insulin (carbs / 10g * ratio)
+    // Calculate meal insulin (carbs / ratio)
     const carbRatio = mealInsulin.carbRatios[mealTime];
-    const mealInsulinDose = (carbs / 10) * carbRatio;
+    const mealInsulinDose = carbs / carbRatio;
 
     // Calculate correction insulin
     const targetAverage =

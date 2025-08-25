@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 
 export const useFormState = <T extends Record<string, any>>(
   initialState: T,
@@ -8,14 +8,14 @@ export const useFormState = <T extends Record<string, any>>(
   const [errors, setErrors] = useState<Record<keyof T, string | null>>({} as any);
   const [saving, setSaving] = useState(false);
 
-  const updateField = useCallback((field: keyof T, value: any) => {
+  const updateField = (field: keyof T, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
     // Clear error for this field if it exists
     setErrors(prev => ({ ...prev, [field]: null }));
-  }, []);
+  };
 
-  const validateForm = useCallback(() => {
+  const validateForm = () => {
     const newErrors: Record<keyof T, string | null> = {} as any;
     let isValid = true;
 
@@ -29,12 +29,12 @@ export const useFormState = <T extends Record<string, any>>(
 
     setErrors(newErrors);
     return isValid;
-  }, [formData, validationRules]);
+  };
 
-  const resetForm = useCallback(() => {
+  const resetForm = () => {
     setFormData(initialState);
     setErrors({} as any);
-  }, [initialState]);
+  };
 
   return {
     formData,

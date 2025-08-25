@@ -20,7 +20,7 @@ const ButtonBase = createRestyleComponent<
   Theme
 >([createVariant({ themeKey: 'buttonVariants' })], TouchableOpacity);
 
-export const Button: React.FC<ButtonProps> = React.memo(({
+export const Button: React.FC<ButtonProps> = ({
   label,
   onPress,
   variant = 'primary',
@@ -73,7 +73,7 @@ export const Button: React.FC<ButtonProps> = React.memo(({
       )}
     </ButtonBase>
   );
-});
+};
 
 Button.displayName = 'Button';
 
@@ -85,7 +85,7 @@ type IconButtonProps = TouchableOpacityProps & {
   disabled?: boolean;
 };
 
-export const IconButton: React.FC<IconButtonProps> = React.memo(({
+export const IconButton: React.FC<IconButtonProps> = ({
   icon,
   size = 'medium',
   variant = 'ghost',
@@ -122,6 +122,6 @@ export const IconButton: React.FC<IconButtonProps> = React.memo(({
       {icon}
     </ButtonBase>
   );
-});
+};
 
 IconButton.displayName = 'IconButton';
