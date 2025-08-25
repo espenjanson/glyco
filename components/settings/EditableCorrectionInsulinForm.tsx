@@ -205,7 +205,7 @@ export const EditableCorrectionInsulinForm: React.FC = observer(() => {
             "correction"
           )}
           editable={isEditing}
-          style={{ opacity: isEditing ? 1 : 0.6 }}
+          opacity={isEditing ? 1 : 0.6}
         />
       </Column>
 
@@ -231,7 +231,7 @@ export const EditableCorrectionInsulinForm: React.FC = observer(() => {
                 "target"
               )}
               editable={isEditing}
-              style={{ opacity: isEditing ? 1 : 0.6 }}
+              opacity={isEditing ? 1 : 0.6}
             />
           </Column>
           <Column flex={1} gap="s">
@@ -249,7 +249,7 @@ export const EditableCorrectionInsulinForm: React.FC = observer(() => {
                 "target"
               )}
               editable={isEditing}
-              style={{ opacity: isEditing ? 1 : 0.6 }}
+              opacity={isEditing ? 1 : 0.6}
             />
           </Column>
         </Row>

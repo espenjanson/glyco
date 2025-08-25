@@ -10,16 +10,15 @@ export const FoodTimeStep: React.FC = observer(() => {
   return (
     <Column gap="l">
       <CustomDatePicker
-        label="Date & Time"
-        value={foodStore.draftSelectedTime}
-        onChange={foodStore.setDraftTime}
+        value={foodStore.draft.timestamp}
+        onChange={(value) => foodStore.setDraftTime(value)}
         mode="datetime"
         maximumDate={new Date()}
       />
 
       <Box>
         <Text variant="caption" color="textLight" textAlign="center">
-          Meal type: {FoodUtils.getMealTypeByTime(foodStore.draftSelectedTime)}
+          Meal type: {FoodUtils.getMealTypeByTime(foodStore.draft.timestamp)}
         </Text>
       </Box>
     </Column>

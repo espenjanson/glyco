@@ -14,12 +14,7 @@ import {
   SpacingProps,
 } from "@shopify/restyle";
 import React from "react";
-import { 
-  SafeAreaView, 
-  ScrollView, 
-  View,
-  ScrollViewProps 
-} from "react-native";
+import { SafeAreaView, ScrollView, ScrollViewProps, View } from "react-native";
 import { Theme } from "../../theme";
 
 // Base restyle props type for consistency
@@ -30,13 +25,7 @@ type RestyleProps = SpacingProps<Theme> &
   LayoutProps<Theme>;
 
 // All restyle functions for consistent application
-const restyleFunctions = [
-  spacing,
-  backgroundColor,
-  border,
-  shadow,
-  layout,
-];
+const restyleFunctions = [spacing, backgroundColor, border, shadow, layout];
 
 // Basic Box component with all layout properties
 export const Box = createBox<Theme>();
@@ -44,16 +33,12 @@ export const Box = createBox<Theme>();
 // Text component with typography variants
 export const Text = createText<Theme>();
 
-
 // ROW COMPONENT - Direct restyle component without wrapper
 type RowProps = RestyleProps & {
   children?: React.ReactNode;
 };
 
-const RowBase = createRestyleComponent<RowProps, Theme>(
-  restyleFunctions,
-  View
-);
+const RowBase = createRestyleComponent<RowProps, Theme>(restyleFunctions, View);
 
 export const Row: React.FC<RowProps> = ({ children, ...props }) => {
   return (
@@ -93,17 +78,11 @@ const CenterBase = createRestyleComponent<CenterProps, Theme>(
 
 export const Center: React.FC<CenterProps> = ({ children, ...props }) => {
   return (
-    <CenterBase 
-      flex={1} 
-      justifyContent="center" 
-      alignItems="center" 
-      {...props}
-    >
+    <CenterBase flex={1} justifyContent="center" alignItems="center" {...props}>
       {children}
     </CenterBase>
   );
 };
-
 
 // CONTAINER COMPONENT - Direct restyle component
 type ContainerProps = RestyleProps & {
@@ -115,15 +94,12 @@ const ContainerBase = createRestyleComponent<ContainerProps, Theme>(
   View
 );
 
-export const Container: React.FC<ContainerProps> = ({ 
-  children, 
-  ...props 
-}) => {
+export const Container: React.FC<ContainerProps> = ({ children, ...props }) => {
   return (
-    <ContainerBase 
-      flex={1} 
-      paddingBottom="xxl" 
-      backgroundColor="background" 
+    <ContainerBase
+      flex={1}
+      paddingBottom="xxl"
+      backgroundColor="background"
       {...props}
     >
       {children}
@@ -131,7 +107,7 @@ export const Container: React.FC<ContainerProps> = ({
   );
 };
 
-// SAFE CONTAINER COMPONENT - Direct restyle component  
+// SAFE CONTAINER COMPONENT - Direct restyle component
 type SafeContainerProps = RestyleProps & {
   children?: React.ReactNode;
 };
@@ -141,24 +117,20 @@ const SafeContainerBase = createRestyleComponent<SafeContainerProps, Theme>(
   View
 );
 
-export const SafeContainer: React.FC<SafeContainerProps> = ({ 
-  children, 
-  ...props 
+export const SafeContainer: React.FC<SafeContainerProps> = ({
+  children,
+  ...props
 }) => {
   return (
-    <SafeContainerBase 
-      flex={1} 
-      backgroundColor="background" 
-      {...props}
-    >
+    <SafeContainerBase flex={1} backgroundColor="background" {...props}>
       {children}
     </SafeContainerBase>
   );
 };
 
 // SCROLL BOX COMPONENT - Properly composed without inner wrapper
-type ScrollBoxProps = RestyleProps & 
-  Omit<ScrollViewProps, 'children'> & {
+type ScrollBoxProps = RestyleProps &
+  Omit<ScrollViewProps, "children"> & {
     children?: React.ReactNode;
   };
 
@@ -190,12 +162,12 @@ export const ScrollBox = React.forwardRef<ScrollView, ScrollBoxProps>(
   }
 );
 
-ScrollBox.displayName = 'ScrollBox';
+ScrollBox.displayName = "ScrollBox";
 
 // SAFE BOX COMPONENT - Clean implementation with SafeAreaView as base
 type SafeBoxProps = RestyleProps & {
   children?: React.ReactNode;
-  backgroundColor?: keyof Theme['colors'];
+  backgroundColor?: keyof Theme["colors"];
 };
 
 const SafeBoxBase = createRestyleComponent<SafeBoxProps, Theme>(
@@ -206,9 +178,9 @@ const SafeBoxBase = createRestyleComponent<SafeBoxProps, Theme>(
 export const SafeBox = React.forwardRef<SafeAreaView, SafeBoxProps>(
   ({ children, backgroundColor = "background", ...props }, ref) => {
     return (
-      <SafeBoxBase 
+      <SafeBoxBase
         ref={ref}
-        flex={1} 
+        flex={1}
         backgroundColor={backgroundColor}
         {...props}
       >
@@ -218,9 +190,9 @@ export const SafeBox = React.forwardRef<SafeAreaView, SafeBoxProps>(
   }
 );
 
-SafeBox.displayName = 'SafeBox';
+SafeBox.displayName = "SafeBox";
 
 // Re-export extracted components for backward compatibility
-export { Card } from './Card';
-export { TouchableBox } from './TouchableBox';
-export { Spacer } from './Spacer';
+export { Card } from "./Card";
+export { Spacer } from "./Spacer";
+export { TouchableBox } from "./TouchableBox";

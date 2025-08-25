@@ -7,10 +7,10 @@ import {
 } from "../../stores/StoreProvider";
 import { GlucoseConverter } from "../../utils/glucose";
 import { MedicalCalculator } from "../../utils/medical";
-import { SheetFooterButtons } from "../sheets/SheetFooterButtons";
+import { FormFooterButtons } from "../sheets/FormFooterButtons";
 import { Box, Column, Row, Text } from "../ui/Box";
 import { Button } from "../ui/Button";
-import { Input } from "../ui/Input";
+import { MultilineTextInput } from "../ui/Input";
 
 interface FoodReviewStepProps {
   closeSheet: () => void;
@@ -88,7 +88,7 @@ export const FoodReviewStep: React.FC<FoodReviewStepProps> = observer(
                 Time:
               </Text>
               <Text variant="caption" color="text">
-                {foodStore.draftSelectedTime.toLocaleTimeString([], {
+                {foodStore.draft.timestamp.toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
@@ -114,7 +114,7 @@ export const FoodReviewStep: React.FC<FoodReviewStepProps> = observer(
               <Text variant="caption" color="textLight">
                 Foods:
               </Text>
-              {foodStore.draftFoods.map((food, index) => (
+              {foodStore.draft.foods.map((food, index) => (
                 <Text
                   key={food.id}
                   variant="caption"
@@ -259,23 +259,20 @@ export const FoodReviewStep: React.FC<FoodReviewStepProps> = observer(
         {/* Notes */}
         <Column gap="s">
           <Text variant="body">Notes (Optional)</Text>
-          <Input
-            value={foodStore.draftNotes}
-            onChangeText={foodStore.setDraftNotes}
+          <MultilineTextInput
+            value={foodStore.draft.notes || ""}
+            onChangeText={(value) => foodStore.setDraftNotes(value)}
             placeholder="Add context about the meal"
-            variant="multiline"
           />
         </Column>
 
         {/* Save Button */}
-        <SheetFooterButtons
-          onCancel={closeSheet}
+        <FormFooterButtons
           onSave={handleSave}
           saveLabel="Save Entry"
-          disabled={foodStore.draftFoods.length === 0}
+          disabled={foodStore.draft.foods.length === 0}
           successMessage="Food entry saved successfully!"
           errorMessage="Failed to save food entry."
-          cancelLabel="Back"
         />
       </Column>
     );

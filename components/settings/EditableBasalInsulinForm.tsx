@@ -173,7 +173,7 @@ export const EditableBasalInsulinForm: React.FC = observer(() => {
           keyboardType="numeric"
           placeholder="e.g. 20"
           editable={isEditing}
-          style={{ opacity: isEditing ? 1 : 0.6 }}
+          opacity={isEditing ? 1 : 0.6}
         />
       </Column>
 

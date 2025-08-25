@@ -8,8 +8,9 @@ type ButtonProps = TouchableOpacityProps &
   VariantProps<Theme, 'buttonVariants'> & {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'primaryLargeRounded';
   size?: 'small' | 'medium' | 'large';
+  borderRadiusVariant?: 'rounded';
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
@@ -25,6 +26,7 @@ export const Button: React.FC<ButtonProps> = ({
   onPress,
   variant = 'primary',
   size = 'medium',
+  borderRadiusVariant,
   loading = false,
   disabled = false,
   fullWidth = false,
@@ -58,7 +60,8 @@ export const Button: React.FC<ButtonProps> = ({
       variant={variant}
       style={[
         size === 'small' && { paddingHorizontal: 8, paddingVertical: 4, minHeight: 32 },
-        size === 'large' && { paddingHorizontal: 24, paddingVertical: 16, minHeight: 56 },
+        size === 'large' && variant !== 'primaryLargeRounded' && { paddingHorizontal: 24, paddingVertical: 16, minHeight: 56 },
+        borderRadiusVariant === 'rounded' && variant !== 'primaryLargeRounded' && { borderRadius: theme.borderRadii.round },
         fullWidth && { width: '100%' },
         disabled && { opacity: 0.5 },
       ]}

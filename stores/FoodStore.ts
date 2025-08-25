@@ -1,7 +1,8 @@
-import { action, computed, observable } from "mobx";
+import { action, computed, makeAutoObservable, observable } from "mobx";
 import { FoodEntry, FoodItem, UserFood } from "../types";
 import { FoodUtils } from "../utils/food";
 import { GlucoseConverter } from "../utils/glucose";
+import { InputUtils } from "../utils/input";
 import { StorageService } from "../utils/storage";
 
 export class FoodStore {
@@ -10,14 +11,29 @@ export class FoodStore {
   @observable loading = false;
   @observable lastEntry: FoodEntry | null = null;
 
-  // Draft entry state for wizard
-  @observable draftFoods: FoodItem[] = [];
-  @observable draftSelectedTime: Date = new Date();
-  @observable draftNotes: string = "";
-  @observable draftInsulinCalculation: any = null;
-  @observable draftCurrentGlucose: string = "";
+  // Draft state - exact FoodEntry type
+  @observable draft: FoodEntry = {
+    id: "",
+    foods: [],
+    totalCarbs: 0,
+    mealType: undefined,
+    timestamp: new Date(),
+    notes: undefined,
+    insulinCalculation: undefined,
+  };
+
+  // UI-specific state for food item input
+  @observable draftFoodItem = {
+    name: "",
+    weight: "",
+    carbsPer100g: "",
+  };
+  @observable userFoodSuggestions: UserFood[] = [];
+  @observable showSuggestions = false;
+  @observable currentGlucose = "";
 
   constructor() {
+    makeAutoObservable(this);
     this.loadData();
   }
 
@@ -175,68 +191,189 @@ export class FoodStore {
   // Draft entry management
   @action
   resetDraft() {
-    this.draftFoods = [];
-    this.draftSelectedTime = new Date();
-    this.draftNotes = "";
-    this.draftCurrentGlucose = "";
-    this.draftInsulinCalculation = null;
+    this.draft.id = "";
+    this.draft.foods = [];
+    this.draft.totalCarbs = 0;
+    this.draft.mealType = undefined;
+    this.draft.timestamp = new Date();
+    this.draft.notes = undefined;
+    this.draft.insulinCalculation = undefined;
+    this.currentGlucose = "";
+    this.resetDraftFoodItem();
+  }
+
+  // Draft food item management
+  @action
+  resetDraftFoodItem() {
+    this.draftFoodItem = {
+      name: "",
+      weight: "",
+      carbsPer100g: "",
+    };
+    this.userFoodSuggestions = [];
+    this.showSuggestions = false;
+  }
+
+  @action
+  setDraftFoodItemName = (name: string) => {
+    this.draftFoodItem.name = name;
+    this.searchUserFoodsForSuggestions(name);
+  };
+
+  @action
+  setDraftFoodItemWeight = (weight: string) => {
+    this.draftFoodItem.weight = weight;
+  };
+
+  @action
+  setDraftFoodItemCarbsPer100g = (carbsPer100g: string) => {
+    this.draftFoodItem.carbsPer100g = carbsPer100g;
+  };
+
+  @action
+  searchUserFoodsForSuggestions(query: string) {
+    if (query.length < 2) {
+      this.userFoodSuggestions = [];
+      this.showSuggestions = false;
+      return;
+    }
+
+    const suggestions = this.searchUserFoods(query);
+    this.userFoodSuggestions = suggestions;
+    this.showSuggestions = suggestions.length > 0;
+  }
+
+  @action
+  selectUserFoodSuggestion(food: UserFood) {
+    this.draftFoodItem = {
+      name: food.name,
+      weight: "",
+      carbsPer100g: food.carbsPer100g.toString(),
+    };
+    this.showSuggestions = false;
+  }
+
+  @action
+  addFoodItemFromDraft = (): FoodItem | null => {
+    const weight = InputUtils.parseNumber(this.draftFoodItem.weight, true);
+    const carbsPer100g = InputUtils.parseNumber(
+      this.draftFoodItem.carbsPer100g,
+      true
+    );
+
+    if (
+      !this.draftFoodItem.name.trim() ||
+      isNaN(weight) ||
+      weight <= 0 ||
+      isNaN(carbsPer100g) ||
+      carbsPer100g < 0
+    ) {
+      throw new Error("Please fill in all fields with valid values");
+    }
+
+    const totalCarbs = (weight / 100) * carbsPer100g;
+    const newFood: FoodItem = {
+      id: Date.now().toString(),
+      name: this.draftFoodItem.name.trim(),
+      weight,
+      carbsPer100g,
+      totalCarbs,
+    };
+
+    // Add to draft foods list
+    this.addDraftFood(newFood);
+
+    // Save to user foods library
+    const userFood: UserFood = {
+      id: Date.now().toString(),
+      name: this.draftFoodItem.name.trim(),
+      carbsPer100g,
+      lastUsed: new Date(),
+      useCount: 1,
+    };
+    this.addOrUpdateUserFood(userFood);
+
+    // Reset the draft food item
+    this.resetDraftFoodItem();
+
+    return newFood;
+  };
+
+  @computed
+  get isDraftFoodItemValid(): boolean {
+    const weight = InputUtils.parseNumber(this.draftFoodItem.weight, true);
+    const carbsPer100g = InputUtils.parseNumber(
+      this.draftFoodItem.carbsPer100g,
+      true
+    );
+
+    return (
+      this.draftFoodItem.name.trim().length > 0 &&
+      !isNaN(weight) &&
+      weight > 0 &&
+      !isNaN(carbsPer100g) &&
+      carbsPer100g >= 0
+    );
   }
 
   @action
   setDraftTime(time: Date) {
-    this.draftSelectedTime = time;
+    this.draft.timestamp = time;
   }
 
   @action
   addDraftFood(food: FoodItem) {
-    this.draftFoods = [...this.draftFoods, food];
+    this.draft.foods = [...(this.draft.foods || []), food];
   }
 
   @action
   removeDraftFood(id: string) {
-    this.draftFoods = this.draftFoods.filter((f) => f.id !== id);
+    this.draft.foods = (this.draft.foods || []).filter((f) => f.id !== id);
   }
 
   @action
   setDraftNotes(notes: string) {
-    this.draftNotes = notes;
+    this.draft.notes = notes;
   }
 
   @action
   setDraftInsulinCalculation(calculation: any, glucose: string) {
-    this.draftInsulinCalculation = calculation;
-    this.draftCurrentGlucose = glucose;
+    this.draft.insulinCalculation = calculation;
+    this.currentGlucose = glucose;
   }
 
   @computed
   get draftTotalCarbs(): number {
-    return this.draftFoods.reduce((sum, food) => sum + food.totalCarbs, 0);
+    return (this.draft.foods || []).reduce(
+      (sum, food) => sum + food.totalCarbs,
+      0
+    );
   }
 
   @computed
   get draftMealType(): "breakfast" | "lunch" | "dinner" | "eveningSnack" {
-    return FoodUtils.getMealTypeByTime(this.draftSelectedTime);
+    return FoodUtils.getMealTypeByTime(this.draft.timestamp);
   }
 
   @action
   saveDraftEntry(userGlucoseUnit: "mmol/L" | "mg/dL") {
     const entry: FoodEntry = {
       id: Date.now().toString(),
-      foods: [...this.draftFoods],
+      foods: [...(this.draft.foods || [])],
       totalCarbs: this.draftTotalCarbs,
       mealType: this.draftMealType,
-      timestamp: this.draftSelectedTime,
-      notes: this.draftNotes.trim() || undefined,
+      timestamp: this.draft.timestamp,
+      notes: this.draft.notes?.trim() || undefined,
     };
 
-    if (this.draftInsulinCalculation && this.draftCurrentGlucose) {
-      const glucose = parseFloat(this.draftCurrentGlucose);
+    if (this.draft.insulinCalculation && this.currentGlucose) {
+      const glucose = InputUtils.parseNumber(this.currentGlucose, true);
       const glucoseInMmol = GlucoseConverter.inputToStorage(
         glucose,
         userGlucoseUnit
       );
       entry.insulinCalculation = {
-        ...this.draftInsulinCalculation,
+        ...this.draft.insulinCalculation,
         currentGlucose: glucoseInMmol,
       };
     }

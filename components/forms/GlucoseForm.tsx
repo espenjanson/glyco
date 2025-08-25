@@ -2,7 +2,7 @@ import { observer } from "mobx-react-lite";
 import React, { useEffect } from "react";
 import { useGlucoseStore } from "../../stores/StoreProvider";
 import { GlucoseReading } from "../../types";
-import { SheetFooterButtons } from "../sheets/SheetFooterButtons";
+import { FormFooterButtons } from "../sheets/FormFooterButtons";
 import { Column } from "../ui/Box";
 import { DateTimeInput } from "./DateTimeInput";
 import { GlucoseValueInput } from "./GlucoseValueInput";
@@ -38,18 +38,16 @@ export const GlucoseForm: React.FC<GlucoseFormProps> = observer(
     };
 
     return (
-      <Column gap="l">
-        {/* Form Fields */}
-        <GlucoseValueInput />
+      <Column gap="xxl">
         <DateTimeInput />
+        <GlucoseValueInput />
         <NotesInput />
 
         {/* Footer Buttons */}
-        <SheetFooterButtons
-          onCancel={closeSheet}
+        <FormFooterButtons
           onSave={handleSave}
           saveLabel={editingReading ? "Update Reading" : "Save Reading"}
-          disabled={!glucoseStore.isDraftValid}
+          disabled={!glucoseStore.draftIsValid}
           // Delete functionality for editing
           onDelete={editingReading ? handleDelete : undefined}
           showDelete={!!editingReading}

@@ -3,7 +3,8 @@ import React, { useEffect, useRef } from "react";
 import { ScrollView } from "react-native";
 import { GlucoseReading } from "../../types";
 import { GlucoseForm } from "../forms/GlucoseForm";
-import { Column, ScrollBox, Text } from "../ui/Box";
+import { Column, ScrollBox } from "../ui/Box";
+import { SheetHeader } from "./SheetHeader";
 
 interface GlucoseInputSheetProps {
   isVisible: boolean;
@@ -36,20 +37,20 @@ export const GlucoseInputSheet: React.FC<GlucoseInputSheetProps> = ({
       cornerRadius={24}
       onDismiss={closeSheet}
     >
-      <ScrollBox ref={scrollViewRef} nestedScrollEnabled>
-        <Column padding="l" gap="l">
-          {/* Header */}
-          <Text variant="title" textAlign="center">
-            {editingReading ? "Edit Glucose Reading" : "Log Glucose Reading"}
-          </Text>
+      <Column>
+        <ScrollBox ref={scrollViewRef} nestedScrollEnabled>
+          {/* Header with close button */}
+          <SheetHeader emoji="🩸" onClose={closeSheet} />
 
-          {/* Glucose Form - handles all logic */}
-          <GlucoseForm
-            editingReading={editingReading}
-            closeSheet={closeSheet}
-          />
-        </Column>
-      </ScrollBox>
+          <Column padding="l" gap="xxl">
+            {/* Glucose Form - handles all logic */}
+            <GlucoseForm
+              editingReading={editingReading}
+              closeSheet={closeSheet}
+            />
+          </Column>
+        </ScrollBox>
+      </Column>
     </TrueSheet>
   );
 };

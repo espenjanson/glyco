@@ -9,12 +9,12 @@ export const FoodItemsStep: React.FC = observer(() => {
   const foodStore = useFoodStore();
   return (
     <Column gap="l">
-      <FoodItemInput onAddFood={foodStore.addDraftFood} />
+      <FoodItemInput />
       <FoodItemsList
-        foods={foodStore.draftFoods}
-        onRemoveFood={foodStore.removeDraftFood}
+        foods={foodStore.draft.foods}
+        onRemoveFood={(id) => foodStore.removeDraftFood(id)}
       />
-      {foodStore.draftFoods.length === 0 && (
+      {foodStore.draft.foods.length === 0 && (
         <Text variant="caption" color="textLight" textAlign="center">
           Add at least one food item to continue
         </Text>

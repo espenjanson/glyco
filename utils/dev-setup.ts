@@ -25,7 +25,7 @@ export const DevSetup = {
       mealInsulin: {
         medicationType: "Humalog",
         carbRatios: {
-          breakfast: 1.5, // 1 unit per 10g carbs * 1.5 = 1.5 units per 10g
+          breakfast: 1.5, // 1 unit per 1g carbs * 1.5 = 1.5 units per 10g
           lunch: 1.2,
           dinner: 1.0,
           eveningSnack: 0.8,

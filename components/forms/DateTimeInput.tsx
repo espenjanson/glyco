@@ -8,9 +8,8 @@ export const DateTimeInput: React.FC = observer(() => {
 
   return (
     <CustomDatePicker
-      label="Date & Time"
-      value={glucoseStore.draftSelectedTime}
-      onChange={glucoseStore.setDraftSelectedTime}
+      value={glucoseStore.draft.timestamp}
+      onChange={(value) => glucoseStore.setDraftSelectedTime(value)}
       mode="datetime"
       maximumDate={new Date()}
     />

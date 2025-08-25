@@ -113,7 +113,7 @@ export const EditablePatientInformationForm: React.FC = observer(() => {
           }
           placeholder="Enter patient name"
           editable={isEditing}
-          style={{ opacity: isEditing ? 1 : 0.6 }}
+          opacity={isEditing ? 1 : 0.6}
         />
       </Column>
 
@@ -128,7 +128,7 @@ export const EditablePatientInformationForm: React.FC = observer(() => {
             keyboardType="numeric"
             placeholder="e.g. 170"
             editable={isEditing}
-            style={{ opacity: isEditing ? 1 : 0.6 }}
+            opacity={isEditing ? 1 : 0.6}
           />
         </Column>
         <Column flex={1} gap="s">
@@ -141,7 +141,7 @@ export const EditablePatientInformationForm: React.FC = observer(() => {
             keyboardType="numeric"
             placeholder="e.g. 70"
             editable={isEditing}
-            style={{ opacity: isEditing ? 1 : 0.6 }}
+            opacity={isEditing ? 1 : 0.6}
           />
         </Column>
       </Row>

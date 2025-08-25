@@ -1,20 +1,32 @@
-import { action, computed, observable } from "mobx";
+import { action, computed, makeAutoObservable, observable } from "mobx";
 import { GlucoseReading } from "../types";
 import { GlucoseConverter } from "../utils/glucose";
 import { StorageService } from "../utils/storage";
 import { SettingsStore } from "./SettingsStore";
 
+const defaultDraft: GlucoseReading = {
+  id: "",
+  value: 0,
+  unit: "mmol/L",
+  timestamp: new Date(),
+  notes: undefined,
+  tags: undefined,
+  context: undefined,
+};
+
 export class GlucoseStore {
   @observable readings: GlucoseReading[] = [];
   @observable loading = false;
 
-  // Draft reading state for forms
-  @observable draftDisplayValue: string = "";
-  @observable draftNotes: string = "";
-  @observable draftSelectedTime: Date = new Date();
-  @observable draftEditingReading: GlucoseReading | null = null;
+  // Draft state - exact GlucoseReading type
+  @observable draft: GlucoseReading = defaultDraft;
+
+  // UI-specific state
+  @observable editingReading: GlucoseReading | null = null;
+  @observable draftIsValid: boolean = true;
 
   constructor(private settingsStore: SettingsStore) {
+    makeAutoObservable(this);
     this.loadReadings();
   }
 
@@ -40,6 +52,10 @@ export class GlucoseStore {
     // Format using GlucoseConverter for consistency
     return GlucoseConverter.formatForDisplay(convertedValue, userGlucoseUnit);
   }
+  @action
+  setDraftIsValid(isValid: boolean) {
+    this.draftIsValid = isValid;
+  }
 
   @action
   loadReadings() {
@@ -63,6 +79,7 @@ export class GlucoseStore {
         reading,
         ...this.readings.filter((r) => r.id !== reading.id),
       ];
+      this.resetDraft();
     } catch (error) {
       console.error("Failed to save glucose reading:", error);
       throw error;
@@ -137,74 +154,65 @@ export class GlucoseStore {
   // Draft reading management
   @action
   resetDraft() {
-    this.draftDisplayValue = "";
-    this.draftNotes = "";
-    this.draftSelectedTime = new Date();
-    this.draftEditingReading = null;
+    this.draft = defaultDraft;
+    this.editingReading = null;
   }
 
   @action
-  setDraftDisplayValue(value: string) {
-    this.draftDisplayValue = value;
+  setDraftValue(value: number) {
+    this.draft.value = value;
   }
 
   @action
   setDraftNotes(notes: string) {
-    this.draftNotes = notes;
+    this.draft.notes = notes;
   }
 
   @action
   setDraftSelectedTime(time: Date) {
-    this.draftSelectedTime = time;
+    this.draft.timestamp = time;
   }
 
   @action
   startEditingReading(reading: GlucoseReading) {
-    this.draftEditingReading = reading;
-    const displayValue = GlucoseConverter.storageToDisplay(
+    this.editingReading = reading;
+    // Convert from storage (mmol/L) to user's preferred unit for editing
+    const convertedValue = GlucoseConverter.storageToDisplay(
       reading.value,
       this.settingsStore.glucoseUnit
     );
-    this.draftDisplayValue = displayValue.toString();
-    this.draftNotes = reading.notes || "";
-    this.draftSelectedTime = new Date(reading.timestamp);
+    this.draft.value = convertedValue;
+    this.draft.notes = reading.notes || "";
+    this.draft.timestamp = new Date(reading.timestamp);
   }
 
   @action
   saveDraftReading() {
-    const numericValue = parseFloat(this.draftDisplayValue);
-    if (isNaN(numericValue) || numericValue <= 0) {
+    if (this.draft.value <= 0) {
       throw new Error("Invalid glucose value");
     }
 
-    const valueInMmol = GlucoseConverter.inputToStorage(
-      numericValue,
+    // Convert from user's unit to storage unit (mmol/L)
+    const valueInStorage = GlucoseConverter.inputToStorage(
+      this.draft.value,
       this.settingsStore.glucoseUnit
     );
 
     const reading: GlucoseReading = {
-      id: this.draftEditingReading
-        ? this.draftEditingReading.id
-        : Date.now().toString(),
-      value: valueInMmol,
+      id: this.editingReading ? this.editingReading.id : Date.now().toString(),
+      value: valueInStorage,
       unit: "mmol/L",
-      timestamp: this.draftSelectedTime,
-      notes: this.draftNotes.trim() || undefined,
+      timestamp: this.draft.timestamp,
+      notes: this.draft.notes?.trim() || undefined,
     };
 
-    if (this.draftEditingReading) {
-      this.updateReading(this.draftEditingReading.id, reading);
+    if (this.editingReading) {
+      this.updateReading(this.editingReading.id, reading);
     } else {
       this.addReading(reading);
     }
 
     this.resetDraft();
     return reading;
-  }
-
-  @computed
-  get isDraftValid(): boolean {
-    const numericValue = parseFloat(this.draftDisplayValue);
-    return !isNaN(numericValue) && numericValue > 0;
   }
 }

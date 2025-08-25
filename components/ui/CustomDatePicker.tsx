@@ -7,7 +7,7 @@ import { Button } from "./Button";
 type PickerMode = "date" | "time" | "datetime";
 
 interface CustomDatePickerProps {
-  label: string;
+  label?: string;
   value: Date | null; // Always a Date object or null
   onChange: (value: Date) => void; // Always passes a Date object
   placeholder?: string;
@@ -86,20 +86,6 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     }
   };
 
-  // Get the icon based on mode
-  const getIcon = (): string => {
-    switch (mode) {
-      case "date":
-        return "📅";
-      case "time":
-        return "🕐";
-      case "datetime":
-        return "📅";
-      default:
-        return "📅";
-    }
-  };
-
   const handleDateChange = (event: any, selectedDate?: Date) => {
     if (selectedDate) {
       if (mode === "datetime") {
@@ -167,7 +153,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   return (
     <Column gap="s">
       {/* Label */}
-      <Text variant="body">{label}</Text>
+      {!!label && <Text variant="caption">{label}</Text>}
 
       {/* Custom Display Component */}
       <Box
@@ -177,7 +163,8 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
         {mode === "datetime" ? (
           // Split datetime into date and time sections
           <Row gap="s">
-            <Box flex={1}>
+            <Box flex={1} gap="s">
+              <Text variant="caption">Date</Text>
               <TouchableBox
                 onPress={() => {
                   if (!disabled) {
@@ -186,27 +173,29 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
                     setShowTimePicker(false);
                   }
                 }}
-                padding="m"
                 backgroundColor="cardBackground"
-                borderWidth={1}
                 borderColor={error ? "error" : "border"}
-                borderRadius="l"
+                paddingBottom="s"
+                borderBottomWidth={2}
               >
                 <Row justifyContent="space-between" alignItems="center">
-                  <Text variant="body" color={value ? "text" : "textSecondary"}>
-                    {value ? value.toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    }) : "Select date"}
-                  </Text>
-                  <Text variant="body" color="textSecondary">
-                    📅
+                  <Text
+                    variant="title"
+                    color={value ? "text" : "textSecondary"}
+                  >
+                    {value
+                      ? value.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : "Select date"}
                   </Text>
                 </Row>
               </TouchableBox>
             </Box>
-            <Box flex={1}>
+            <Box flex={1} gap="s">
+              <Text variant="caption">Time</Text>
               <TouchableBox
                 onPress={() => {
                   if (!disabled) {
@@ -215,22 +204,23 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
                     setShowTimePicker(true);
                   }
                 }}
-                padding="m"
                 backgroundColor="cardBackground"
-                borderWidth={1}
                 borderColor={error ? "error" : "border"}
-                borderRadius="l"
+                paddingBottom="s"
+                borderBottomWidth={2}
               >
                 <Row justifyContent="space-between" alignItems="center">
-                  <Text variant="body" color={value ? "text" : "textSecondary"}>
-                    {value ? value.toLocaleTimeString("en-US", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: false,
-                    }) : "Select time"}
-                  </Text>
-                  <Text variant="body" color="textSecondary">
-                    🕐
+                  <Text
+                    variant="title"
+                    color={value ? "text" : "textSecondary"}
+                  >
+                    {value
+                      ? value.toLocaleTimeString("en-US", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: false,
+                        })
+                      : "Select time"}
                   </Text>
                 </Row>
               </TouchableBox>
@@ -249,10 +239,6 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
             <Row justifyContent="space-between" alignItems="center">
               <Text variant="body" color={value ? "text" : "textSecondary"}>
                 {value ? getDisplayValue() : getPlaceholder()}
-              </Text>
-
-              <Text variant="body" color="textSecondary">
-                {getIcon()}
               </Text>
             </Row>
           </TouchableBox>
@@ -293,8 +279,10 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
                   <Column gap="m">
                     <Row justifyContent="space-between" alignItems="center">
                       <Text variant="title">
-                        {mode === "datetime" 
-                          ? (showTimePicker ? "Select Time" : "Select Date")
+                        {mode === "datetime"
+                          ? showTimePicker
+                            ? "Select Time"
+                            : "Select Date"
                           : `Select ${label}`}
                       </Text>
                     </Row>

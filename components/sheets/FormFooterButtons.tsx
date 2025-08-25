@@ -1,13 +1,11 @@
 import React from "react";
-import { Box, Column, Row } from "../ui/Box";
+import { Column } from "../ui/Box";
 import { DeleteButton } from "../ui/DeleteButton";
 import { SaveButton } from "../ui/SaveButton";
 
-interface SheetFooterButtonsProps {
-  onCancel: () => void;
+interface FormFooterButtonsProps {
   onSave: () => Promise<void> | void;
   saveLabel?: string;
-  cancelLabel?: string;
   disabled?: boolean;
 
   // Delete functionality (optional)
@@ -24,11 +22,9 @@ interface SheetFooterButtonsProps {
   deleteErrorMessage?: string;
 }
 
-export const SheetFooterButtons: React.FC<SheetFooterButtonsProps> = ({
-  onCancel,
+export const FormFooterButtons: React.FC<FormFooterButtonsProps> = ({
   onSave,
   saveLabel = "Save",
-  cancelLabel = "Cancel",
   disabled = false,
 
   // Delete props
@@ -59,19 +55,16 @@ export const SheetFooterButtons: React.FC<SheetFooterButtonsProps> = ({
         />
       )}
 
-      {/* Cancel/Save Buttons */}
-      <Row>
-        <Box flex={1}>
-          <SaveButton
-            onSave={onSave}
-            label={saveLabel}
-            disabled={disabled}
-            successMessage={successMessage}
-            errorMessage={errorMessage}
-            fullWidth
-          />
-        </Box>
-      </Row>
+      {/* Save Button */}
+      <SaveButton
+        onSave={onSave}
+        label={saveLabel}
+        disabled={disabled}
+        successMessage={successMessage}
+        errorMessage={errorMessage}
+        variant="primaryLargeRounded"
+        fullWidth
+      />
     </Column>
   );
 };

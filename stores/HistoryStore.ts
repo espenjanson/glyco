@@ -1,4 +1,4 @@
-import { action, computed, observable } from "mobx";
+import { action, computed, makeAutoObservable, observable } from "mobx";
 import { FoodEntry, GlucoseReading, InsulinShot } from "../types";
 import { MedicalCalculator } from "../utils/medical";
 import { FoodStore } from "./FoodStore";
@@ -37,7 +37,9 @@ export class HistoryStore {
     private insulinStore: InsulinStore,
     private foodStore: FoodStore,
     private settingsStore: SettingsStore
-  ) {}
+  ) {
+    makeAutoObservable(this);
+  }
 
   @action
   setTimeRange(days: number) {
@@ -59,21 +61,21 @@ export class HistoryStore {
   @computed
   get filteredGlucoseReadings(): GlucoseReading[] {
     return this.glucoseStore.readings
-      .filter(reading => reading.timestamp >= this.cutoffDate)
+      .filter((reading) => reading.timestamp >= this.cutoffDate)
       .slice(0, 100); // Limit for performance
   }
 
   @computed
   get filteredInsulinShots(): InsulinShot[] {
     return this.insulinStore.shots
-      .filter(shot => shot.timestamp >= this.cutoffDate)
+      .filter((shot) => shot.timestamp >= this.cutoffDate)
       .slice(0, 100);
   }
 
   @computed
   get filteredFoodEntries(): FoodEntry[] {
     return this.foodStore.entries
-      .filter(entry => entry.timestamp >= this.cutoffDate)
+      .filter((entry) => entry.timestamp >= this.cutoffDate)
       .slice(0, 100);
   }
 
@@ -82,7 +84,7 @@ export class HistoryStore {
     const entries: HistoryEntry[] = [];
 
     // Add glucose readings
-    this.filteredGlucoseReadings.forEach(reading => {
+    this.filteredGlucoseReadings.forEach((reading) => {
       entries.push({
         id: `glucose-${reading.id}`,
         type: "glucose",
@@ -92,7 +94,7 @@ export class HistoryStore {
     });
 
     // Add insulin shots
-    this.filteredInsulinShots.forEach(shot => {
+    this.filteredInsulinShots.forEach((shot) => {
       entries.push({
         id: `insulin-${shot.id}`,
         type: "insulin",
@@ -102,7 +104,7 @@ export class HistoryStore {
     });
 
     // Add food entries
-    this.filteredFoodEntries.forEach(entry => {
+    this.filteredFoodEntries.forEach((entry) => {
       entries.push({
         id: `food-${entry.id}`,
         type: "food",
@@ -112,7 +114,9 @@ export class HistoryStore {
     });
 
     // Sort by timestamp (most recent first)
-    return entries.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    return entries.sort(
+      (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
+    );
   }
 
   @computed
@@ -130,19 +134,33 @@ export class HistoryStore {
     const average = sum / glucoseReadings.length;
 
     const settings = this.settingsStore.userSettings;
-    const inRange = settings ? glucoseReadings.filter(r => {
-      return r.value >= settings.targetRangeLow && r.value <= settings.targetRangeHigh;
-    }).length : 0;
+    const inRange = settings
+      ? glucoseReadings.filter((r) => {
+          return (
+            r.value >= settings.targetRangeLow &&
+            r.value <= settings.targetRangeHigh
+          );
+        }).length
+      : 0;
 
-    const inRangePercentage = Math.round((inRange / glucoseReadings.length) * 100);
+    const inRangePercentage = Math.round(
+      (inRange / glucoseReadings.length) * 100
+    );
     const a1cEstimate = MedicalCalculator.estimateHbA1c(average);
 
     // Insulin statistics
-    const totalInsulinUnits = insulinShots.reduce((sum, shot) => sum + shot.units, 0);
+    const totalInsulinUnits = insulinShots.reduce(
+      (sum, shot) => sum + shot.units,
+      0
+    );
 
     // Food statistics
-    const totalCarbs = foodEntries.reduce((sum, entry) => sum + entry.totalCarbs, 0);
-    const averageCarbs = foodEntries.length > 0 ? totalCarbs / foodEntries.length : 0;
+    const totalCarbs = foodEntries.reduce(
+      (sum, entry) => sum + entry.totalCarbs,
+      0
+    );
+    const averageCarbs =
+      foodEntries.length > 0 ? totalCarbs / foodEntries.length : 0;
 
     return {
       average: Math.round(average * 10) / 10, // Round to 1 decimal
@@ -158,7 +176,7 @@ export class HistoryStore {
   @computed
   get glucoseTrend(): TrendData | null {
     const readings = this.filteredGlucoseReadings.slice(0, 10); // Use last 10 readings
-    
+
     if (readings.length < 3) {
       return null;
     }
@@ -178,7 +196,7 @@ export class HistoryStore {
     sortedReadings.forEach((reading, index) => {
       const x = index; // Use index as x-coordinate
       const y = reading.value;
-      
+
       sumX += x;
       sumY += y;
       sumXY += x * y;
@@ -186,15 +204,16 @@ export class HistoryStore {
     });
 
     const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-    
+
     // Calculate time difference between first and last reading in hours
-    const timeDiffHours = (
-      sortedReadings[sortedReadings.length - 1].timestamp.getTime() - 
-      sortedReadings[0].timestamp.getTime()
-    ) / (1000 * 60 * 60);
+    const timeDiffHours =
+      (sortedReadings[sortedReadings.length - 1].timestamp.getTime() -
+        sortedReadings[0].timestamp.getTime()) /
+      (1000 * 60 * 60);
 
     // Convert slope to rate per hour
-    const ratePerHour = timeDiffHours > 0 ? (slope / timeDiffHours) * (n - 1) : 0;
+    const ratePerHour =
+      timeDiffHours > 0 ? (slope / timeDiffHours) * (n - 1) : 0;
 
     // Determine direction and confidence
     let direction: "rising" | "falling" | "stable";
@@ -231,8 +250,8 @@ export class HistoryStore {
     const readings = this.filteredGlucoseReadings;
     const dailyGroups: { [key: string]: number[] } = {};
 
-    readings.forEach(reading => {
-      const dateKey = reading.timestamp.toISOString().split('T')[0];
+    readings.forEach((reading) => {
+      const dateKey = reading.timestamp.toISOString().split("T")[0];
       if (!dailyGroups[dateKey]) {
         dailyGroups[dateKey] = [];
       }
@@ -257,7 +276,7 @@ export class HistoryStore {
       weeklyGroups[i] = [];
     }
 
-    readings.forEach(reading => {
+    readings.forEach((reading) => {
       const dayOfWeek = reading.timestamp.getDay(); // 0 = Sunday, 6 = Saturday
       weeklyGroups[dayOfWeek].push(reading.value);
     });
@@ -265,33 +284,37 @@ export class HistoryStore {
     return Object.entries(weeklyGroups)
       .map(([day, values]) => ({
         dayOfWeek: parseInt(day),
-        average: values.length > 0 ? values.reduce((sum, val) => sum + val, 0) / values.length : 0,
+        average:
+          values.length > 0
+            ? values.reduce((sum, val) => sum + val, 0) / values.length
+            : 0,
       }))
-      .filter(item => item.average > 0); // Only include days with data
+      .filter((item) => item.average > 0); // Only include days with data
   }
 
   getReadingsForDateRange(startDate: Date, endDate: Date): GlucoseReading[] {
     return this.glucoseStore.readings.filter(
-      reading => reading.timestamp >= startDate && reading.timestamp <= endDate
+      (reading) =>
+        reading.timestamp >= startDate && reading.timestamp <= endDate
     );
   }
 
   getInsulinForDateRange(startDate: Date, endDate: Date): InsulinShot[] {
     return this.insulinStore.shots.filter(
-      shot => shot.timestamp >= startDate && shot.timestamp <= endDate
+      (shot) => shot.timestamp >= startDate && shot.timestamp <= endDate
     );
   }
 
   getFoodEntriesForDateRange(startDate: Date, endDate: Date): FoodEntry[] {
     return this.foodStore.entries.filter(
-      entry => entry.timestamp >= startDate && entry.timestamp <= endDate
+      (entry) => entry.timestamp >= startDate && entry.timestamp <= endDate
     );
   }
 
   @computed
   get chartData(): { timestamp: number; value: number }[] {
     return this.filteredGlucoseReadings
-      .map(reading => ({
+      .map((reading) => ({
         timestamp: reading.timestamp.getTime(),
         value: reading.value,
       }))

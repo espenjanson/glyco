@@ -3,7 +3,8 @@ import React, { useEffect, useRef } from "react";
 import { ScrollView } from "react-native";
 import { InsulinShot } from "../../types";
 import { InsulinForm } from "../forms/InsulinForm";
-import { Column, ScrollBox, Text } from "../ui/Box";
+import { Column, ScrollBox } from "../ui/Box";
+import { SheetHeader } from "./SheetHeader";
 
 interface InsulinInputSheetProps {
   isVisible: boolean;
@@ -36,17 +37,13 @@ export const InsulinInputSheet: React.FC<InsulinInputSheetProps> = ({
       cornerRadius={24}
       onDismiss={closeSheet}
     >
-      <ScrollBox ref={scrollViewRef} nestedScrollEnabled>
-        <Column padding="l" gap="l">
-          {/* Header */}
-          <Text variant="title" textAlign="center">
-            Log Insulin Shot
-          </Text>
-
-          {/* Insulin Form - handles all logic */}
+      <Column>
+        <ScrollBox ref={scrollViewRef} nestedScrollEnabled>
+          {/* Header with close button */}
+          <SheetHeader emoji="💉" onClose={closeSheet} />
           <InsulinForm closeSheet={closeSheet} />
-        </Column>
-      </ScrollBox>
+        </ScrollBox>
+      </Column>
     </TrueSheet>
   );
 };

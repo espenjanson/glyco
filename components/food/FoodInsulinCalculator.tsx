@@ -37,7 +37,7 @@ export const FoodInsulinCalculator: React.FC<FoodInsulinCalculatorProps> =
         const mealType = FoodUtils.getMealTypeByTime(selectedTime);
         const carbRatio = medicalSettings.mealInsulin.carbRatios[mealType];
 
-        // Carb ratios are stored as-is (units per 10g), but correction values are in mmol/L
+        // Carb ratios are stored as-is (units per 1g), but correction values are in mmol/L
         const isValid =
           carbRatio > 0 &&
           medicalSettings.correctionInsulin.correctionFactor > 0 &&
@@ -168,7 +168,6 @@ export const FoodInsulinCalculator: React.FC<FoodInsulinCalculatorProps> =
                   glucoseUnit,
                   "reading"
                 )}
-                variant="default"
               />
             </Box>
             <Button

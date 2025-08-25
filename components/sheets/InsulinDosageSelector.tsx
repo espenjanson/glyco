@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Column, Row, Text, TouchableBox } from "../ui/Box";
+import { Box, Column, Row, Text } from "../ui/Box";
 import { Button } from "../ui/Button";
 
 interface InsulinDosageSelectorProps {
@@ -14,15 +14,7 @@ export const InsulinDosageSelector: React.FC<InsulinDosageSelectorProps> = ({
   const handleStepChange = (increment: number) => {
     const currentValue = parseFloat(value) || 0;
     const newValue = Math.max(0, currentValue + increment);
-    // Round to 1 decimal place to handle floating point precision
-    const roundedValue = Math.round(newValue * 10) / 10;
-    onValueChange(roundedValue === 0 ? "" : roundedValue.toString());
-  };
-
-  const formatDisplayValue = (): string => {
-    if (!value) return "0";
-    const numValue = parseFloat(value);
-    return isNaN(numValue) ? "0" : numValue.toString();
+    onValueChange(newValue === 0 ? "" : newValue.toString());
   };
 
   return (
@@ -37,7 +29,7 @@ export const InsulinDosageSelector: React.FC<InsulinDosageSelectorProps> = ({
             fullWidth
           />
         </Box>
-        <TouchableBox
+        <Box
           flex={2}
           backgroundColor="backgroundSecondary"
           borderRadius="m"
@@ -47,12 +39,12 @@ export const InsulinDosageSelector: React.FC<InsulinDosageSelectorProps> = ({
           justifyContent="center"
         >
           <Text variant="title" fontSize={32} lineHeight={40}>
-            {formatDisplayValue()}
+            {value || "0"}
           </Text>
           <Text variant="caption" color="textLight">
             units
           </Text>
-        </TouchableBox>
+        </Box>
         <Box flex={1}>
           <Button
             label="+0.5"

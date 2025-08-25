@@ -172,7 +172,7 @@ export const EditableMealInsulinForm: React.FC = observer(() => {
 
       <Row alignItems="center">
         <Text variant="body" color="textSecondary">
-          Carbohydrate Ratios (units per 10g carbs)
+          Carbohydrate Ratios (units per 1g carbs)
         </Text>
         <HelpTooltip
           title="Carbohydrate Ratios"
@@ -191,7 +191,7 @@ export const EditableMealInsulinForm: React.FC = observer(() => {
             keyboardType="numeric"
             placeholder="e.g. 1.0"
             editable={isEditing}
-            style={{ opacity: isEditing ? 1 : 0.6 }}
+            opacity={isEditing ? 1 : 0.6}
           />
         </Column>
         <Column flex={1} gap="s">
@@ -204,7 +204,7 @@ export const EditableMealInsulinForm: React.FC = observer(() => {
             keyboardType="numeric"
             placeholder="e.g. 1.2"
             editable={isEditing}
-            style={{ opacity: isEditing ? 1 : 0.6 }}
+            opacity={isEditing ? 1 : 0.6}
           />
         </Column>
         <Column flex={1} gap="s">
@@ -217,7 +217,7 @@ export const EditableMealInsulinForm: React.FC = observer(() => {
             keyboardType="numeric"
             placeholder="e.g. 1.5"
             editable={isEditing}
-            style={{ opacity: isEditing ? 1 : 0.6 }}
+            opacity={isEditing ? 1 : 0.6}
           />
         </Column>
       </Row>
@@ -232,7 +232,7 @@ export const EditableMealInsulinForm: React.FC = observer(() => {
           keyboardType="numeric"
           placeholder="e.g. 1.0"
           editable={isEditing}
-          style={{ opacity: isEditing ? 1 : 0.6 }}
+          opacity={isEditing ? 1 : 0.6}
         />
       </Column>
     </Column>

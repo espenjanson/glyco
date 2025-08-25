@@ -16,7 +16,7 @@ export const MEDICAL_HELP = {
     "Rapid-acting insulin taken before meals to cover carbohydrates consumed.",
   correctionInsulin:
     "Rapid-acting insulin used to correct high blood glucose levels.",
-  carbRatio: "The amount of insulin needed per 10 grams of carbohydrates.",
+  carbRatio: "The amount of insulin needed per 1 grams of carbohydrates.",
   correctionFactor:
     "How much 1 unit of insulin lowers blood glucose (in mmol/L).",
   targetRange:

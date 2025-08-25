@@ -1,4 +1,4 @@
-import { action, computed, observable } from "mobx";
+import { action, computed, makeAutoObservable, observable } from "mobx";
 import { InsulinShot } from "../types";
 import { StorageService } from "../utils/storage";
 
@@ -7,14 +7,20 @@ export class InsulinStore {
   @observable loading = false;
   @observable lastShot: InsulinShot | null = null;
 
-  // Draft shot state for forms
-  @observable draftUnits: string = "";
-  @observable draftType: "rapid" | "long-acting" | "intermediate" = "rapid";
-  @observable draftSite: string = "";
-  @observable draftNotes: string = "";
-  @observable draftSelectedTime: Date = new Date();
+  // Draft state - exact InsulinShot type
+  @observable draft: InsulinShot = {
+    id: "",
+    type: "rapid",
+    units: 0,
+    timestamp: new Date(),
+    notes: undefined,
+    injectionSite: undefined,
+  };
+
+  // UI-specific state - no intermediate display conversion needed
 
   constructor() {
+    makeAutoObservable(this);
     this.loadShots();
   }
 
@@ -115,58 +121,56 @@ export class InsulinStore {
   // Draft shot management
   @action
   resetDraft() {
-    this.draftUnits = "";
-    this.draftType = "rapid";
-    this.draftSite = "";
-    this.draftNotes = "";
-    this.draftSelectedTime = new Date();
+    this.draft.units = 0;
+    this.draft.type = "rapid";
+    this.draft.injectionSite = undefined;
+    this.draft.notes = undefined;
+    this.draft.timestamp = new Date();
   }
 
   @action
-  setDraftUnits(units: string) {
-    this.draftUnits = units;
+  setDraftUnits(units: number) {
+    this.draft.units = units;
   }
 
   @action
   setDraftType(type: "rapid" | "long-acting" | "intermediate") {
-    this.draftType = type;
+    this.draft.type = type;
   }
 
   @action
   setDraftSite(site: string) {
-    this.draftSite = site;
+    this.draft.injectionSite = site;
   }
 
   @action
   setDraftNotes(notes: string) {
-    this.draftNotes = notes;
+    this.draft.notes = notes;
   }
 
   @action
   setDraftSelectedTime(time: Date) {
-    this.draftSelectedTime = time;
+    this.draft.timestamp = time;
   }
 
   @computed
   get isDraftValid(): boolean {
-    const numUnits = parseFloat(this.draftUnits);
-    return !isNaN(numUnits) && numUnits > 0;
+    return this.draft.units > 0;
   }
 
   @action
   saveDraftShot() {
-    const numUnits = parseFloat(this.draftUnits);
-    if (isNaN(numUnits) || numUnits <= 0) {
+    if (this.draft.units <= 0) {
       throw new Error("Invalid units value");
     }
 
     const shot: InsulinShot = {
       id: Date.now().toString(),
-      units: numUnits,
-      type: this.draftType,
-      injectionSite: this.draftSite.trim() || undefined,
-      notes: this.draftNotes.trim() || undefined,
-      timestamp: this.draftSelectedTime,
+      units: this.draft.units,
+      type: this.draft.type,
+      injectionSite: this.draft.injectionSite?.trim() || undefined,
+      notes: this.draft.notes?.trim() || undefined,
+      timestamp: this.draft.timestamp,
     };
 
     this.addShot(shot);

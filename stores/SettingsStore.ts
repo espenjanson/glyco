@@ -1,7 +1,7 @@
-import { observable, action, computed } from "mobx";
-import { UserSettings, MedicalSettings, SettingsHistoryEntry } from "../types";
-import { StorageService } from "../utils/storage";
+import { action, computed, makeAutoObservable, observable } from "mobx";
+import { MedicalSettings, SettingsHistoryEntry, UserSettings } from "../types";
 import { MedicalCalculator } from "../utils/medical";
+import { StorageService } from "../utils/storage";
 
 export class SettingsStore {
   @observable userSettings: UserSettings | null = null;
@@ -12,6 +12,7 @@ export class SettingsStore {
   private saveTimeoutRef: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
+    makeAutoObservable(this);
     this.loadSettings();
   }
 
@@ -22,7 +23,7 @@ export class SettingsStore {
       const userSettings = StorageService.getUserSettings();
       const medicalSettings = StorageService.getMedicalSettings();
       const settingsHistory = StorageService.getSettingsHistory();
-      
+
       this.userSettings = userSettings;
       this.medicalSettings = medicalSettings;
       this.settingsHistory = settingsHistory;
@@ -48,10 +49,13 @@ export class SettingsStore {
   @action
   updateMedicalSettings(updates: Partial<MedicalSettings>) {
     try {
-      const newSettings = { ...this.medicalSettings, ...updates } as MedicalSettings;
+      const newSettings = {
+        ...this.medicalSettings,
+        ...updates,
+      } as MedicalSettings;
       StorageService.saveMedicalSettings(newSettings);
       this.medicalSettings = newSettings;
-      
+
       // Update validation warnings
       const validation = MedicalCalculator.validateMedicalSettings(newSettings);
       this.sectionWarnings = validation.warningsBySection;
@@ -83,7 +87,12 @@ export class SettingsStore {
     const newSettings = { ...this.userSettings, [key]: value };
 
     // Save history entry
-    StorageService.saveSettingsChange("App Settings", String(key), oldValue, value);
+    StorageService.saveSettingsChange(
+      "App Settings",
+      String(key),
+      oldValue,
+      value
+    );
 
     // Debounced save
     if (this.saveTimeoutRef) {
@@ -105,7 +114,8 @@ export class SettingsStore {
     for (let i = 0; i < path.length - 1; i++) {
       oldCurrent = oldCurrent[path[i] as keyof typeof oldCurrent] as any;
     }
-    const oldValue = oldCurrent[path[path.length - 1] as keyof typeof oldCurrent];
+    const oldValue =
+      oldCurrent[path[path.length - 1] as keyof typeof oldCurrent];
 
     // Create new settings with updated value
     const newSettings = JSON.parse(JSON.stringify(this.medicalSettings));
@@ -153,9 +163,11 @@ export class SettingsStore {
       }
       if (settings.medical) {
         StorageService.saveMedicalSettings(settings.medical);
-        
+
         // Update validation warnings
-        const validation = MedicalCalculator.validateMedicalSettings(settings.medical);
+        const validation = MedicalCalculator.validateMedicalSettings(
+          settings.medical
+        );
         this.sectionWarnings = validation.warningsBySection;
       }
     } catch (error) {
@@ -179,7 +191,9 @@ export class SettingsStore {
   removeSettingsHistoryEntry = (entryId: string) => {
     try {
       StorageService.removeSettingsHistoryEntry(entryId);
-      this.settingsHistory = this.settingsHistory.filter(entry => entry.id !== entryId);
+      this.settingsHistory = this.settingsHistory.filter(
+        (entry) => entry.id !== entryId
+      );
     } catch (error) {
       console.error("Failed to remove settings history entry:", error);
       throw error;
@@ -227,27 +241,29 @@ export class SettingsStore {
   @computed
   get isMedicalSettingsConfigured() {
     if (!this.medicalSettings) return false;
-    
+
     const { correctionInsulin, mealInsulin } = this.medicalSettings;
-    
+
     // Check if essential fields are properly configured
     return (
       correctionInsulin.correctionFactor > 0 &&
       correctionInsulin.targetGlucoseMin > 0 &&
       correctionInsulin.targetGlucoseMax > 0 &&
       correctionInsulin.targetGlucoseMin < correctionInsulin.targetGlucoseMax &&
-      Object.values(mealInsulin.carbRatios).every(ratio => ratio > 0)
+      Object.values(mealInsulin.carbRatios).every((ratio) => ratio > 0)
     );
   }
 
   @computed
   get carbRatios() {
-    return this.medicalSettings?.mealInsulin.carbRatios || {
-      breakfast: 0,
-      lunch: 0,
-      dinner: 0,
-      eveningSnack: 0
-    };
+    return (
+      this.medicalSettings?.mealInsulin.carbRatios || {
+        breakfast: 0,
+        lunch: 0,
+        dinner: 0,
+        eveningSnack: 0,
+      }
+    );
   }
 
   @computed
@@ -260,17 +276,19 @@ export class SettingsStore {
     if (!this.medicalSettings) return { min: 0, max: 0 };
     return {
       min: this.medicalSettings.correctionInsulin.targetGlucoseMin,
-      max: this.medicalSettings.correctionInsulin.targetGlucoseMax
+      max: this.medicalSettings.correctionInsulin.targetGlucoseMax,
     };
   }
 
   @computed
   get glucoseTargets() {
-    return this.medicalSettings?.glucoseTargets || {
-      fasting: { min: 0, max: 0 },
-      beforeMeals: { min: 0, max: 0 },
-      afterMeals: { min: 0, max: 0 },
-      bedtime: { min: 0, max: 0 }
-    };
+    return (
+      this.medicalSettings?.glucoseTargets || {
+        fasting: { min: 0, max: 0 },
+        beforeMeals: { min: 0, max: 0 },
+        afterMeals: { min: 0, max: 0 },
+        bedtime: { min: 0, max: 0 },
+      }
+    );
   }
 }

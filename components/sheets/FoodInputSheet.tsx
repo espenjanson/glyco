@@ -5,11 +5,11 @@ import { Alert, ScrollView } from "react-native";
 import { useFoodStore } from "../../stores/StoreProvider";
 import { FoodItemsStep } from "../food/FoodItemsStep";
 import { FoodReviewStep } from "../food/FoodReviewStep";
-import { FoodTimeStep } from "../food/FoodTimeStep";
-import { Box, Row, ScrollBox } from "../ui/Box";
+import { Box, Column, Row, ScrollBox } from "../ui/Box";
 import { Button } from "../ui/Button";
 import { WizardLayout } from "../wizard/WizardLayout";
 import { GlucoseInputSheet } from "./GlucoseInputSheet";
+import { SheetHeader } from "./SheetHeader";
 
 interface FoodInputSheetProps {
   isVisible: boolean;
@@ -44,7 +44,7 @@ export const FoodInputSheet: React.FC<FoodInputSheetProps> = observer(
     const handleNext = () => {
       if (currentStep === 0) {
         setCurrentStep(1);
-      } else if (currentStep === 1 && foodStore.draftFoods.length > 0) {
+      } else if (currentStep === 1 && foodStore.draft.foods.length > 0) {
         setCurrentStep(2);
       } else if (currentStep === 1) {
         Alert.alert("Error", "Please add at least one food item");
@@ -62,10 +62,9 @@ export const FoodInputSheet: React.FC<FoodInputSheetProps> = observer(
     ];
 
     const stepComponents = [
-      <FoodTimeStep key={0} />,
-      <FoodItemsStep key={1} />,
+      <FoodItemsStep key={0} />,
       <FoodReviewStep
-        key={2}
+        key={1}
         closeSheet={closeSheet}
         onAddGlucoseReading={() => setShowGlucoseSheet(true)}
       />,
@@ -95,26 +94,25 @@ export const FoodInputSheet: React.FC<FoodInputSheetProps> = observer(
         cornerRadius={24}
         onDismiss={closeSheet}
       >
-        <ScrollBox ref={scrollViewRef} nestedScrollEnabled>
-          <WizardLayout
-            title="Log Food Entry"
-            currentStep={currentStep}
-            totalSteps={3}
-            stepTitle={stepTitles[currentStep]}
-            onNext={handleNext}
-            onBack={handleBack}
-            onCancel={closeSheet}
-            nextDisabled={
-              currentStep === 1 && foodStore.draftFoods.length === 0
-            }
-            showNext={currentStep < 2}
-            showBack={currentStep > 0}
-            showCancel={currentStep === 0}
-            customFooter={customFooter}
-          >
-            {stepComponents[currentStep]}
-          </WizardLayout>
-        </ScrollBox>
+        <Column>
+          <ScrollBox ref={scrollViewRef} nestedScrollEnabled>
+            {/* Header with close button */}
+            <SheetHeader emoji="🍽️" onClose={closeSheet} />
+            <WizardLayout
+              currentStep={currentStep}
+              onNext={handleNext}
+              onBack={handleBack}
+              nextDisabled={
+                currentStep === 1 && foodStore.draft.foods.length === 0
+              }
+              showNext={currentStep < 2}
+              showBack={currentStep > 0}
+              customFooter={customFooter}
+            >
+              {stepComponents[currentStep]}
+            </WizardLayout>
+          </ScrollBox>
+        </Column>
 
         {/* Glucose Input Sheet */}
         <GlucoseInputSheet

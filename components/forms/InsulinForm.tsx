@@ -1,13 +1,14 @@
 import { observer } from "mobx-react-lite";
 import React, { useEffect } from "react";
 import { useInsulinStore } from "../../stores/StoreProvider";
+import { InputUtils } from "../../utils/input";
+import { FormFooterButtons } from "../sheets/FormFooterButtons";
 import { InjectionSiteSelector } from "../sheets/InjectionSiteSelector";
 import { InsulinDosageSelector } from "../sheets/InsulinDosageSelector";
 import { InsulinTypeSelector } from "../sheets/InsulinTypeSelector";
-import { SheetFooterButtons } from "../sheets/SheetFooterButtons";
 import { Column, Text } from "../ui/Box";
 import { CustomDatePicker } from "../ui/CustomDatePicker";
-import { Input } from "../ui/Input";
+import { MultilineTextInput } from "../ui/Input";
 
 interface InsulinFormProps {
   closeSheet: () => void;
@@ -27,48 +28,50 @@ export const InsulinForm: React.FC<InsulinFormProps> = observer(
     };
 
     return (
-      <Column gap="l">
-        {/* Insulin Units */}
-        <InsulinDosageSelector
-          value={insulinStore.draftUnits}
-          onValueChange={insulinStore.setDraftUnits}
+      <Column gap="xxl" padding="l">
+        {/* Date & Time */}
+        <CustomDatePicker
+          value={insulinStore.draft.timestamp}
+          onChange={(value) => insulinStore.setDraftSelectedTime(value)}
+          mode="datetime"
+          maximumDate={new Date()}
         />
-
         {/* Insulin Type */}
         <InsulinTypeSelector
-          selectedType={insulinStore.draftType}
-          onTypeChange={insulinStore.setDraftType}
+          selectedType={insulinStore.draft.type}
+          onTypeChange={(value) => insulinStore.setDraftType(value)}
+        />
+        {/* Insulin Units */}
+        <InsulinDosageSelector
+          value={
+            insulinStore.draft.units === 0
+              ? ""
+              : insulinStore.draft.units.toString()
+          }
+          onValueChange={(value) => {
+            const numericValue = InputUtils.parseNumber(value, true);
+            insulinStore.setDraftUnits(isNaN(numericValue) ? 0 : numericValue);
+          }}
         />
 
         {/* Injection Site */}
         <InjectionSiteSelector
-          selectedSite={insulinStore.draftSite}
-          onSiteChange={insulinStore.setDraftSite}
-        />
-
-        {/* Date & Time */}
-        <CustomDatePicker
-          label="Date & Time"
-          value={insulinStore.draftSelectedTime}
-          onChange={insulinStore.setDraftSelectedTime}
-          mode="datetime"
-          maximumDate={new Date()}
+          selectedSite={insulinStore.draft.injectionSite || ""}
+          onSiteChange={(value) => insulinStore.setDraftSite(value)}
         />
 
         {/* Notes */}
         <Column gap="s">
           <Text variant="body">Notes (Optional)</Text>
-          <Input
-            value={insulinStore.draftNotes}
-            onChangeText={insulinStore.setDraftNotes}
+          <MultilineTextInput
+            value={insulinStore.draft.notes || ""}
+            onChangeText={(value) => insulinStore.setDraftNotes(value)}
             placeholder="Add context about the injection"
-            variant="multiline"
           />
         </Column>
 
         {/* Footer Buttons */}
-        <SheetFooterButtons
-          onCancel={closeSheet}
+        <FormFooterButtons
           onSave={handleSave}
           saveLabel="Save Shot"
           disabled={!insulinStore.isDraftValid}

@@ -1,4 +1,4 @@
-import { action, computed, observable } from "mobx";
+import { action, computed, makeAutoObservable, observable } from "mobx";
 import { DashboardStats } from "../types";
 import { FoodStore } from "./FoodStore";
 import { GlucoseStore } from "./GlucoseStore";
@@ -14,6 +14,7 @@ export class RootStore {
   @observable historyStore: HistoryStore;
 
   constructor() {
+    makeAutoObservable(this);
     this.insulinStore = new InsulinStore();
     this.foodStore = new FoodStore();
     this.settingsStore = new SettingsStore();
