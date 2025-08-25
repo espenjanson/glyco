@@ -1,20 +1,18 @@
 import React from "react";
+import { QuickAction } from "../../types/enums";
 import { Text, TouchableBox } from "../ui/Box";
 
-export type QuickActionType = "glucose" | "food" | "insulin" | "exercise";
-
 interface QuickActionButtonProps {
-  type: QuickActionType;
-  onPress: (type: QuickActionType) => void;
+  type: QuickAction;
+  onPress: (type: QuickAction) => void;
 }
 
-const ACTION_CONFIG: Record<QuickActionType, { emoji: string; label: string }> =
-  {
-    glucose: { emoji: "🩸", label: "Blood" },
-    food: { emoji: "🍽️", label: "Food" },
-    insulin: { emoji: "💉", label: "Insulin" },
-    exercise: { emoji: "🏃", label: "Exercise" },
-  };
+const ACTION_CONFIG: Record<QuickAction, { emoji: string; label: string }> = {
+  [QuickAction.GLUCOSE]: { emoji: "🩸", label: "Blood" },
+  [QuickAction.FOOD]: { emoji: "🍽️", label: "Food" },
+  [QuickAction.INSULIN]: { emoji: "💉", label: "Insulin" },
+  [QuickAction.EXERCISE]: { emoji: "🏃", label: "Exercise" },
+};
 
 export const QuickActionButton: React.FC<QuickActionButtonProps> = ({
   type,

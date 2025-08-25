@@ -31,6 +31,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
 }) => {
   const [showPicker, setShowPicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false); // For datetime mode on iOS
+  const [tempValue, setTempValue] = useState<Date | null>(null); // Temporary value while picking
 
   // Get appropriate placeholder based on mode
   const getPlaceholder = (): string => {
@@ -47,9 +48,9 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
     }
   };
 
-  // Get Date value for picker - no conversion needed
+  // Get Date value for picker - use temp value when picking, otherwise use actual value
   const getDateValue = (): Date => {
-    return value || new Date();
+    return tempValue || value || new Date();
   };
 
   // Format value for display only
@@ -100,20 +101,38 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
-    // On Android, close picker immediately
-    if (Platform.OS === "android") {
-      setShowPicker(false);
+    if (selectedDate) {
+      if (mode === "datetime") {
+        // For datetime mode, we need to preserve the existing date or time
+        const currentValue = tempValue || value || new Date();
+        let newDate: Date;
+
+        if (showTimePicker) {
+          // Time picker: preserve date, update time
+          newDate = new Date(currentValue);
+          newDate.setHours(selectedDate.getHours());
+          newDate.setMinutes(selectedDate.getMinutes());
+          newDate.setSeconds(selectedDate.getSeconds());
+        } else {
+          // Date picker: preserve time, update date
+          newDate = new Date(selectedDate);
+          newDate.setHours(currentValue.getHours());
+          newDate.setMinutes(currentValue.getMinutes());
+          newDate.setSeconds(currentValue.getSeconds());
+        }
+
+        setTempValue(newDate);
+      } else {
+        // For single date or time mode, store in temp value
+        setTempValue(selectedDate);
+      }
     }
 
-    if (selectedDate) {
-      if (mode === "datetime" && Platform.OS === "ios" && !showTimePicker) {
-        // First step for iOS datetime: date selected, now show time picker
-        setShowTimePicker(true);
-      } else {
-        // For all other cases, close picker and call onChange with the Date
-        if (mode === "datetime" && Platform.OS === "ios") {
-          setShowTimePicker(false);
-        }
+    // On Android, auto-close for non-datetime modes only
+    if (Platform.OS === "android" && mode !== "datetime") {
+      setShowPicker(false);
+      // For Android non-datetime, apply immediately
+      if (selectedDate) {
         onChange(selectedDate);
       }
     }
@@ -121,6 +140,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
 
   const openPicker = () => {
     if (!disabled) {
+      setTempValue(value || new Date());
       setShowPicker(true);
       setShowTimePicker(false);
     }
@@ -129,6 +149,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   const closePicker = () => {
     setShowPicker(false);
     setShowTimePicker(false);
+    setTempValue(null);
   };
 
   // Determine the picker mode for native component
@@ -153,24 +174,89 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
         opacity={disabled ? 0.6 : 1}
         pointerEvents={disabled ? "none" : "auto"}
       >
-        <TouchableBox
-          onPress={openPicker}
-          padding="m"
-          backgroundColor="cardBackground"
-          borderWidth={1}
-          borderColor={error ? "error" : "border"}
-          borderRadius="l"
-        >
-          <Row justifyContent="space-between" alignItems="center">
-            <Text variant="body" color={value ? "text" : "textSecondary"}>
-              {value ? getDisplayValue() : getPlaceholder()}
-            </Text>
-
-            <Text variant="body" color="textSecondary">
-              {getIcon()}
-            </Text>
+        {mode === "datetime" ? (
+          // Split datetime into date and time sections
+          <Row gap="s">
+            <Box flex={1}>
+              <TouchableBox
+                onPress={() => {
+                  if (!disabled) {
+                    setTempValue(value || new Date());
+                    setShowPicker(true);
+                    setShowTimePicker(false);
+                  }
+                }}
+                padding="m"
+                backgroundColor="cardBackground"
+                borderWidth={1}
+                borderColor={error ? "error" : "border"}
+                borderRadius="l"
+              >
+                <Row justifyContent="space-between" alignItems="center">
+                  <Text variant="body" color={value ? "text" : "textSecondary"}>
+                    {value ? value.toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    }) : "Select date"}
+                  </Text>
+                  <Text variant="body" color="textSecondary">
+                    📅
+                  </Text>
+                </Row>
+              </TouchableBox>
+            </Box>
+            <Box flex={1}>
+              <TouchableBox
+                onPress={() => {
+                  if (!disabled) {
+                    setTempValue(value || new Date());
+                    setShowPicker(true);
+                    setShowTimePicker(true);
+                  }
+                }}
+                padding="m"
+                backgroundColor="cardBackground"
+                borderWidth={1}
+                borderColor={error ? "error" : "border"}
+                borderRadius="l"
+              >
+                <Row justifyContent="space-between" alignItems="center">
+                  <Text variant="body" color={value ? "text" : "textSecondary"}>
+                    {value ? value.toLocaleTimeString("en-US", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: false,
+                    }) : "Select time"}
+                  </Text>
+                  <Text variant="body" color="textSecondary">
+                    🕐
+                  </Text>
+                </Row>
+              </TouchableBox>
+            </Box>
           </Row>
-        </TouchableBox>
+        ) : (
+          // Single picker for date or time only
+          <TouchableBox
+            onPress={openPicker}
+            padding="m"
+            backgroundColor="cardBackground"
+            borderWidth={1}
+            borderColor={error ? "error" : "border"}
+            borderRadius="l"
+          >
+            <Row justifyContent="space-between" alignItems="center">
+              <Text variant="body" color={value ? "text" : "textSecondary"}>
+                {value ? getDisplayValue() : getPlaceholder()}
+              </Text>
+
+              <Text variant="body" color="textSecondary">
+                {getIcon()}
+              </Text>
+            </Row>
+          </TouchableBox>
+        )}
       </Box>
 
       {/* Error Message */}
@@ -207,15 +293,10 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
                   <Column gap="m">
                     <Row justifyContent="space-between" alignItems="center">
                       <Text variant="title">
-                        {showTimePicker
-                          ? "Select Time"
-                          : `Select ${mode === "datetime" ? "Date" : label}`}
+                        {mode === "datetime" 
+                          ? (showTimePicker ? "Select Time" : "Select Date")
+                          : `Select ${label}`}
                       </Text>
-                      {mode === "datetime" && !showTimePicker && (
-                        <Text variant="caption" color="textSecondary">
-                          Step 1 of 2
-                        </Text>
-                      )}
                     </Row>
 
                     <DateTimePicker
@@ -239,17 +320,12 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
                       </Box>
                       <Box flex={1}>
                         <Button
-                          label={
-                            mode === "datetime" && !showTimePicker
-                              ? "Next"
-                              : "Done"
-                          }
+                          label="Done"
                           onPress={() => {
-                            if (mode === "datetime" && !showTimePicker) {
-                              setShowTimePicker(true);
-                            } else {
-                              closePicker();
+                            if (tempValue) {
+                              onChange(tempValue);
                             }
+                            closePicker();
                           }}
                           variant="primary"
                           fullWidth

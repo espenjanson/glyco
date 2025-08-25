@@ -1,14 +1,44 @@
-import { observable, action, computed } from "mobx";
-import { GlucoseReading, GlucoseUnit } from "../types";
+import { action, computed, observable } from "mobx";
+import { GlucoseReading } from "../types";
+import { GlucoseConverter } from "../utils/glucose";
 import { StorageService } from "../utils/storage";
+import { SettingsStore } from "./SettingsStore";
 
 export class GlucoseStore {
   @observable readings: GlucoseReading[] = [];
   @observable loading = false;
-  @observable lastReading: GlucoseReading | null = null;
 
-  constructor() {
+  // Draft reading state for forms
+  @observable draftDisplayValue: string = "";
+  @observable draftNotes: string = "";
+  @observable draftSelectedTime: Date = new Date();
+  @observable draftEditingReading: GlucoseReading | null = null;
+
+  constructor(private settingsStore: SettingsStore) {
     this.loadReadings();
+  }
+
+  @computed
+  get lastReading(): GlucoseReading | null {
+    return this.readings.length > 0 ? this.readings[0] : null;
+  }
+
+  @computed
+  get parsedLastReading(): string {
+    // Get glucose value in user's preferred unit
+
+    const lastGlucose = this.lastReading;
+    if (!lastGlucose) return "--";
+
+    const userGlucoseUnit = this.settingsStore.glucoseUnit;
+    // Convert from stored mmol/L to user's preferred unit using GlucoseConverter
+    const convertedValue = GlucoseConverter.storageToDisplay(
+      lastGlucose.value,
+      userGlucoseUnit
+    );
+
+    // Format using GlucoseConverter for consistency
+    return GlucoseConverter.formatForDisplay(convertedValue, userGlucoseUnit);
   }
 
   @action
@@ -17,7 +47,7 @@ export class GlucoseStore {
     try {
       const readings = StorageService.getGlucoseReadings();
       this.readings = readings;
-      this.lastReading = readings.length > 0 ? readings[0] : null;
+
       this.loading = false;
     } catch (error) {
       console.error("Failed to load glucose readings:", error);
@@ -29,8 +59,10 @@ export class GlucoseStore {
   addReading(reading: GlucoseReading) {
     try {
       StorageService.saveGlucoseReading(reading);
-      this.readings = [reading, ...this.readings.filter(r => r.id !== reading.id)];
-      this.lastReading = reading;
+      this.readings = [
+        reading,
+        ...this.readings.filter((r) => r.id !== reading.id),
+      ];
     } catch (error) {
       console.error("Failed to save glucose reading:", error);
       throw error;
@@ -40,18 +72,15 @@ export class GlucoseStore {
   @action
   updateReading(id: string, updates: Partial<GlucoseReading>) {
     try {
-      const reading = this.readings.find(r => r.id === id);
+      const reading = this.readings.find((r) => r.id === id);
       if (!reading) throw new Error("Reading not found");
-      
+
       const updatedReading = { ...reading, ...updates };
       StorageService.saveGlucoseReading(updatedReading);
-      
-      const index = this.readings.findIndex(r => r.id === id);
+
+      const index = this.readings.findIndex((r) => r.id === id);
       if (index !== -1) {
         this.readings[index] = updatedReading;
-      }
-      if (this.lastReading?.id === id) {
-        this.lastReading = updatedReading;
       }
     } catch (error) {
       console.error("Failed to update glucose reading:", error);
@@ -63,10 +92,7 @@ export class GlucoseStore {
   deleteReading(id: string) {
     try {
       StorageService.deleteGlucoseReading(id);
-      this.readings = this.readings.filter(r => r.id !== id);
-      if (this.lastReading?.id === id) {
-        this.lastReading = this.readings.length > 0 ? this.readings[0] : null;
-      }
+      this.readings = this.readings.filter((r) => r.id !== id);
     } catch (error) {
       console.error("Failed to delete glucose reading:", error);
       throw error;
@@ -75,23 +101,25 @@ export class GlucoseStore {
 
   getReadingsByDateRange(startDate: Date, endDate: Date): GlucoseReading[] {
     return this.readings.filter(
-      reading => 
-        reading.timestamp >= startDate && 
-        reading.timestamp <= endDate
+      (reading) =>
+        reading.timestamp >= startDate && reading.timestamp <= endDate
     );
   }
 
   getAverageGlucose(days: number = 30): number {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - days);
-    
+
     const recentReadings = this.readings.filter(
-      reading => reading.timestamp >= cutoff
+      (reading) => reading.timestamp >= cutoff
     );
-    
+
     if (recentReadings.length === 0) return 0;
-    
-    const sum = recentReadings.reduce((total, reading) => total + reading.value, 0);
+
+    const sum = recentReadings.reduce(
+      (total, reading) => total + reading.value,
+      0
+    );
     return sum / recentReadings.length;
   }
 
@@ -104,5 +132,79 @@ export class GlucoseStore {
   @computed
   get isLastReadingStale(): boolean {
     return this.lastReadingAge > 20;
+  }
+
+  // Draft reading management
+  @action
+  resetDraft() {
+    this.draftDisplayValue = "";
+    this.draftNotes = "";
+    this.draftSelectedTime = new Date();
+    this.draftEditingReading = null;
+  }
+
+  @action
+  setDraftDisplayValue(value: string) {
+    this.draftDisplayValue = value;
+  }
+
+  @action
+  setDraftNotes(notes: string) {
+    this.draftNotes = notes;
+  }
+
+  @action
+  setDraftSelectedTime(time: Date) {
+    this.draftSelectedTime = time;
+  }
+
+  @action
+  startEditingReading(reading: GlucoseReading) {
+    this.draftEditingReading = reading;
+    const displayValue = GlucoseConverter.storageToDisplay(
+      reading.value,
+      this.settingsStore.glucoseUnit
+    );
+    this.draftDisplayValue = displayValue.toString();
+    this.draftNotes = reading.notes || "";
+    this.draftSelectedTime = new Date(reading.timestamp);
+  }
+
+  @action
+  saveDraftReading() {
+    const numericValue = parseFloat(this.draftDisplayValue);
+    if (isNaN(numericValue) || numericValue <= 0) {
+      throw new Error("Invalid glucose value");
+    }
+
+    const valueInMmol = GlucoseConverter.inputToStorage(
+      numericValue,
+      this.settingsStore.glucoseUnit
+    );
+
+    const reading: GlucoseReading = {
+      id: this.draftEditingReading
+        ? this.draftEditingReading.id
+        : Date.now().toString(),
+      value: valueInMmol,
+      unit: "mmol/L",
+      timestamp: this.draftSelectedTime,
+      notes: this.draftNotes.trim() || undefined,
+    };
+
+    if (this.draftEditingReading) {
+      this.updateReading(this.draftEditingReading.id, reading);
+    } else {
+      this.addReading(reading);
+    }
+
+    this.resetDraft();
+    return reading;
+  }
+
+  @computed
+  get isDraftValid(): boolean {
+    const numericValue = parseFloat(this.draftDisplayValue);
+    return !isNaN(numericValue) && numericValue > 0;
   }
 }

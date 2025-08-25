@@ -1,46 +1,29 @@
+import { observer } from "mobx-react-lite";
 import React from "react";
-import { TimePickerModal } from "../common/TimePickerModal";
+import { useFoodStore } from "../../stores/StoreProvider";
 import { FoodUtils } from "../../utils/food";
 import { Box, Column, Text } from "../ui/Box";
-import { TimePickerSection } from "../sheets/TimePickerSection";
+import { CustomDatePicker } from "../ui/CustomDatePicker";
 
-interface FoodTimeStepProps {
-  selectedTime: Date;
-  showTimePicker: boolean;
-  onTimeChange: (increment: number) => void;
-  onShowTimePicker: () => void;
-  onTimePickerChange: (date: Date) => void;
-  onCloseTimePicker: () => void;
-}
-
-export const FoodTimeStep: React.FC<FoodTimeStepProps> = ({
-  selectedTime,
-  showTimePicker,
-  onTimeChange,
-  onShowTimePicker,
-  onTimePickerChange,
-  onCloseTimePicker,
-}) => {
+export const FoodTimeStep: React.FC = observer(() => {
+  const foodStore = useFoodStore();
   return (
     <Column gap="l">
-      <TimePickerSection
-        selectedTime={selectedTime}
-        onTimeChange={onTimeChange}
-        onShowTimePicker={onShowTimePicker}
-      />
-      
-      <TimePickerModal
-        visible={showTimePicker}
-        value={selectedTime}
-        onChange={onTimePickerChange}
-        onClose={onCloseTimePicker}
+      <CustomDatePicker
+        label="Date & Time"
+        value={foodStore.draftSelectedTime}
+        onChange={foodStore.setDraftTime}
+        mode="datetime"
+        maximumDate={new Date()}
       />
 
       <Box>
         <Text variant="caption" color="textLight" textAlign="center">
-          Meal type: {FoodUtils.getMealTypeByTime(selectedTime)}
+          Meal type: {FoodUtils.getMealTypeByTime(foodStore.draftSelectedTime)}
         </Text>
       </Box>
     </Column>
   );
-};
+});
+
+FoodTimeStep.displayName = "FoodTimeStep";

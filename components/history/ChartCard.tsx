@@ -1,28 +1,21 @@
-import React from 'react';
-import { Dimensions } from 'react-native';
-import { Box, Column, Text, Card } from '../ui/Box';
-import { LineChart } from '../charts/LineChart';
-import { GlucoseReading } from '../../types';
+import { observer } from "mobx-react-lite";
+import React from "react";
+import { Dimensions } from "react-native";
+import { useHistoryStore } from "../../stores/StoreProvider";
+import { LineChart } from "../charts/LineChart";
+import { Box, Card, Column, Text } from "../ui/Box";
 
-const screenWidth = Dimensions.get('window').width;
+const screenWidth = Dimensions.get("window").width;
 
-interface ChartCardProps {
-  readings: GlucoseReading[];
-}
-
-export const ChartCard: React.FC<ChartCardProps> = ({ readings }) => {
+export const ChartCard: React.FC = observer(() => {
+  const historyStore = useHistoryStore();
+  const readings = historyStore.filteredGlucoseReadings;
   return (
     <Card variant="outlined">
       <Column gap="m">
-        <Text variant="title">
-          Glucose Trend
-        </Text>
+        <Text variant="title">Glucose Trend</Text>
         {readings.length >= 2 ? (
-          <LineChart
-            data={readings}
-            width={screenWidth - 64}
-            height={200}
-          />
+          <LineChart data={readings} width={screenWidth - 64} height={200} />
         ) : (
           <Box padding="xl" alignItems="center">
             <Column gap="s" alignItems="center">
@@ -38,4 +31,4 @@ export const ChartCard: React.FC<ChartCardProps> = ({ readings }) => {
       </Column>
     </Card>
   );
-};
+});

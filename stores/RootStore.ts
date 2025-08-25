@@ -2,6 +2,7 @@ import { action, computed, observable } from "mobx";
 import { DashboardStats } from "../types";
 import { FoodStore } from "./FoodStore";
 import { GlucoseStore } from "./GlucoseStore";
+import { HistoryStore } from "./HistoryStore";
 import { InsulinStore } from "./InsulinStore";
 import { SettingsStore } from "./SettingsStore";
 
@@ -10,12 +11,19 @@ export class RootStore {
   @observable insulinStore: InsulinStore;
   @observable foodStore: FoodStore;
   @observable settingsStore: SettingsStore;
+  @observable historyStore: HistoryStore;
 
   constructor() {
-    this.glucoseStore = new GlucoseStore();
     this.insulinStore = new InsulinStore();
     this.foodStore = new FoodStore();
     this.settingsStore = new SettingsStore();
+    this.glucoseStore = new GlucoseStore(this.settingsStore);
+    this.historyStore = new HistoryStore(
+      this.glucoseStore,
+      this.insulinStore,
+      this.foodStore,
+      this.settingsStore
+    );
   }
 
   // Computed dashboard stats that combine data from multiple stores

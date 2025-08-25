@@ -48,6 +48,11 @@ export const useSettingsStore = () => {
   return rootStore.settingsStore;
 };
 
+export const useHistoryStore = () => {
+  const rootStore = useRootStore();
+  return rootStore.historyStore;
+};
+
 export const useDashboardStats = () => {
   const rootStore = useRootStore();
   return rootStore.dashboardStats;

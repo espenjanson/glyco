@@ -1,17 +1,11 @@
+import { observer } from "mobx-react-lite";
 import React from "react";
 import { Alert } from "react-native";
+import { useSettingsStore } from "../../stores/StoreProvider";
 import { Column } from "../ui/Box";
 import { Button } from "../ui/Button";
-import { observer } from "mobx-react-lite";
-import { useSettingsStore } from "../../stores/StoreProvider";
 
-interface SettingsActionsProps {
-  onSettingsReloaded: () => void;
-}
-
-export const SettingsActions: React.FC<SettingsActionsProps> = observer(({
-  onSettingsReloaded,
-}) => {
+export const SettingsActions: React.FC = observer(() => {
   const settingsStore = useSettingsStore();
 
   const handleResetDefaults = () => {
@@ -26,7 +20,6 @@ export const SettingsActions: React.FC<SettingsActionsProps> = observer(({
           onPress: () => {
             try {
               settingsStore.resetToDefaults();
-              onSettingsReloaded();
               Alert.alert("Success", "Settings have been reset to defaults");
             } catch {
               Alert.alert("Error", "Failed to reset settings");

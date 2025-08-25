@@ -1,5 +1,4 @@
 import * as Notifications from "expo-notifications";
-import { observer } from "mobx-react-lite";
 import React, { useEffect } from "react";
 import { Alert } from "react-native";
 import { AppSettingsForm } from "../../components/settings/AppSettingsForm";
@@ -10,11 +9,8 @@ import { EditableMealInsulinForm } from "../../components/settings/EditableMealI
 import { EditablePatientInformationForm } from "../../components/settings/EditablePatientInformationForm";
 import { SettingsActions } from "../../components/settings/SettingsActions";
 import { Column, Container, SafeBox, ScrollBox } from "../../components/ui/Box";
-import { useSettingsStore } from "../../stores/StoreProvider";
 
-const SettingsTab = observer(() => {
-  const settingsStore = useSettingsStore();
-
+const SettingsTab = () => {
   const setupNotifications = async () => {
     const { status } = await Notifications.requestPermissionsAsync();
     if (status !== "granted") {
@@ -29,55 +25,30 @@ const SettingsTab = observer(() => {
     setupNotifications();
   }, []);
 
-  if (!settingsStore.userSettings || !settingsStore.medicalSettings)
-    return null;
-
-  const { userSettings, medicalSettings } = settingsStore;
-
   return (
     <SafeBox>
       <Container>
         <ScrollBox showsVerticalScrollIndicator={false}>
           <Column>
-            <AppSettingsForm
-              settings={userSettings}
-              updateSetting={settingsStore.updateUserSetting}
-            />
+            <AppSettingsForm />
 
-            <EditablePatientInformationForm
-              settings={medicalSettings}
-              warnings={
-                settingsStore.sectionWarnings["Patient Information"] || []
-              }
-            />
+            <EditablePatientInformationForm />
 
-            <EditableBasalInsulinForm
-              settings={medicalSettings}
-              warnings={settingsStore.sectionWarnings["Basal Insulin"] || []}
-            />
+            <EditableBasalInsulinForm />
 
-            <EditableMealInsulinForm
-              settings={medicalSettings}
-              warnings={settingsStore.sectionWarnings["Meal Insulin"] || []}
-            />
+            <EditableMealInsulinForm />
 
-            <EditableCorrectionInsulinForm
-              settings={medicalSettings}
-              warnings={
-                settingsStore.sectionWarnings["Correction Insulin"] || []
-              }
-              glucoseUnit={userSettings.glucoseUnit}
-            />
+            <EditableCorrectionInsulinForm />
 
             <DataExportSection />
 
-            <SettingsActions onSettingsReloaded={() => {}} />
+            <SettingsActions />
           </Column>
         </ScrollBox>
       </Container>
     </SafeBox>
   );
-});
+};
 
 SettingsTab.displayName = "SettingsTab";
 

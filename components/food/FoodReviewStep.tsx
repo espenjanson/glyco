@@ -1,36 +1,25 @@
 import { observer } from "mobx-react-lite";
 import React, { useEffect, useState } from "react";
-import { useGlucoseStore, useSettingsStore } from "../../stores/StoreProvider";
-import { FoodItem, GlucoseUnit } from "../../types";
-import { FoodUtils } from "../../utils/food";
+import {
+  useFoodStore,
+  useGlucoseStore,
+  useSettingsStore,
+} from "../../stores/StoreProvider";
 import { GlucoseConverter } from "../../utils/glucose";
 import { MedicalCalculator } from "../../utils/medical";
+import { SheetFooterButtons } from "../sheets/SheetFooterButtons";
 import { Box, Column, Row, Text } from "../ui/Box";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 
 interface FoodReviewStepProps {
-  selectedTime: Date;
-  foods: FoodItem[];
-  totalCarbs: number;
-  notes: string;
-  glucoseUnit: GlucoseUnit;
-  onNotesChange: (notes: string) => void;
-  onInsulinCalculation: (calc: any, glucose: string) => void;
+  closeSheet: () => void;
   onAddGlucoseReading?: () => void;
 }
 
 export const FoodReviewStep: React.FC<FoodReviewStepProps> = observer(
-  ({
-    selectedTime,
-    foods,
-    totalCarbs,
-    notes,
-    glucoseUnit,
-    onNotesChange,
-    onInsulinCalculation,
-    onAddGlucoseReading,
-  }) => {
+  ({ closeSheet, onAddGlucoseReading }) => {
+    const foodStore = useFoodStore();
     const glucoseStore = useGlucoseStore();
     const settingsStore = useSettingsStore();
 
@@ -39,6 +28,7 @@ export const FoodReviewStep: React.FC<FoodReviewStepProps> = observer(
     const lastGlucose = glucoseStore.lastReading;
     const glucoseAge = glucoseStore.lastReadingAge;
     const medicalSettingsValid = settingsStore.isMedicalSettingsConfigured;
+    const glucoseUnit = settingsStore.glucoseUnit;
 
     const calculateInsulin = () => {
       if (
@@ -48,25 +38,34 @@ export const FoodReviewStep: React.FC<FoodReviewStepProps> = observer(
       )
         return;
 
-      const mealType = FoodUtils.getMealTypeByTime(selectedTime);
+      const mealType = foodStore.draftMealType;
       const glucoseInMmol = lastGlucose.value; // Already in mmol/L
 
       const calc = MedicalCalculator.calculateInsulinDose(
-        totalCarbs,
+        foodStore.draftTotalCarbs,
         glucoseInMmol,
         mealType,
         settingsStore.medicalSettings
       );
 
       setInsulinCalculation(calc);
-      onInsulinCalculation(calc, lastGlucose.value.toString());
+      foodStore.setDraftInsulinCalculation(calc, lastGlucose.value.toString());
     };
 
     useEffect(() => {
-      if (lastGlucose && medicalSettingsValid && totalCarbs > 0) {
+      if (
+        lastGlucose &&
+        medicalSettingsValid &&
+        foodStore.draftTotalCarbs > 0
+      ) {
         calculateInsulin();
       }
-    }, [lastGlucose, medicalSettingsValid, totalCarbs]);
+    }, [lastGlucose, medicalSettingsValid, foodStore.draftTotalCarbs]);
+
+    const handleSave = async () => {
+      foodStore.saveDraftEntry(settingsStore.glucoseUnit);
+      closeSheet();
+    };
 
     const formatGlucoseValue = (value: number) => {
       const displayValue = GlucoseConverter.storageToDisplay(
@@ -89,7 +88,7 @@ export const FoodReviewStep: React.FC<FoodReviewStepProps> = observer(
                 Time:
               </Text>
               <Text variant="caption" color="text">
-                {selectedTime.toLocaleTimeString([], {
+                {foodStore.draftSelectedTime.toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
@@ -100,7 +99,7 @@ export const FoodReviewStep: React.FC<FoodReviewStepProps> = observer(
                 Meal type:
               </Text>
               <Text variant="caption" color="text">
-                {FoodUtils.getMealTypeByTime(selectedTime)}
+                {foodStore.draftMealType}
               </Text>
             </Row>
             <Row justifyContent="space-between">
@@ -108,14 +107,14 @@ export const FoodReviewStep: React.FC<FoodReviewStepProps> = observer(
                 Total carbs:
               </Text>
               <Text variant="caption" color="text" fontWeight="bold">
-                {totalCarbs.toFixed(1)}g
+                {foodStore.draftTotalCarbs.toFixed(1)}g
               </Text>
             </Row>
             <Box marginTop="xs">
               <Text variant="caption" color="textLight">
                 Foods:
               </Text>
-              {foods.map((food, index) => (
+              {foodStore.draftFoods.map((food, index) => (
                 <Text
                   key={food.id}
                   variant="caption"
@@ -261,13 +260,26 @@ export const FoodReviewStep: React.FC<FoodReviewStepProps> = observer(
         <Column gap="s">
           <Text variant="body">Notes (Optional)</Text>
           <Input
-            value={notes}
-            onChangeText={onNotesChange}
+            value={foodStore.draftNotes}
+            onChangeText={foodStore.setDraftNotes}
             placeholder="Add context about the meal"
             variant="multiline"
           />
         </Column>
+
+        {/* Save Button */}
+        <SheetFooterButtons
+          onCancel={closeSheet}
+          onSave={handleSave}
+          saveLabel="Save Entry"
+          disabled={foodStore.draftFoods.length === 0}
+          successMessage="Food entry saved successfully!"
+          errorMessage="Failed to save food entry."
+          cancelLabel="Back"
+        />
       </Column>
     );
   }
 );
+
+FoodReviewStep.displayName = "FoodReviewStep";

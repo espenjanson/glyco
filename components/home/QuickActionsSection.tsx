@@ -1,16 +1,17 @@
 import React from "react";
+import { QuickAction } from "../../types/enums";
 import { Box, Row, Text } from "../ui/Box";
-import { QuickActionButton, QuickActionType } from "./QuickActionButton";
+import { QuickActionButton } from "./QuickActionButton";
 
 interface QuickActionsSectionProps {
-  onActionPress: (action: QuickActionType) => void;
+  onActionPress: (action: QuickAction) => void;
 }
 
-const QUICK_ACTIONS: QuickActionType[] = [
-  "glucose",
-  "food",
-  "insulin",
-  "exercise",
+const QUICK_ACTIONS: QuickAction[] = [
+  QuickAction.GLUCOSE,
+  QuickAction.FOOD,
+  QuickAction.INSULIN,
+  QuickAction.EXERCISE,
 ];
 
 export const QuickActionsSection: React.FC<QuickActionsSectionProps> = ({

@@ -1,65 +1,35 @@
-import React, { useState } from 'react';
-import { Box, Text, Container, Column, SafeBox, ScrollBox } from '../../components/ui/Box';
-import { GlucoseReading } from '../../types';
-import { observer } from 'mobx-react-lite';
-import { useGlucoseStore, useSettingsStore } from '../../stores/StoreProvider';
-import { MedicalCalculator } from '../../utils/medical';
-import { StatsCard } from '../../components/history/StatsCard';
-import { ChartCard } from '../../components/history/ChartCard';
-import { RecentEntries } from '../../components/history/RecentEntries';
-import { TimeRangeSelector } from '../../components/history/TimeRangeSelector';
-import { GlucoseInputSheet } from '../../components/sheets/GlucoseInputSheet';
+import React, { useState } from "react";
+import { ChartCard } from "../../components/history/ChartCard";
+import { RecentEntries } from "../../components/history/RecentEntries";
+import { StatsCard } from "../../components/history/StatsCard";
+import { TimeRangeSelector } from "../../components/history/TimeRangeSelector";
+import { GlucoseInputSheet } from "../../components/sheets/GlucoseInputSheet";
+import {
+  Box,
+  Column,
+  Container,
+  SafeBox,
+  ScrollBox,
+  Text,
+} from "../../components/ui/Box";
+import { GlucoseReading } from "../../types";
 
-const HistoryTab = observer(() => {
-  const glucoseStore = useGlucoseStore();
-  const settingsStore = useSettingsStore();
-  const [timeRange, setTimeRange] = useState(7);
+const HistoryTab = () => {
   const [showEditSheet, setShowEditSheet] = useState(false);
-  const [editingReading, setEditingReading] = useState<GlucoseReading | null>(null);
-
-  const getFilteredReadings = () => {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - timeRange);
-    return glucoseStore.readings.filter(r => r.timestamp >= cutoff).slice(0, 20);
-  };
-
-  const calculateStats = () => {
-    const filteredReadings = getFilteredReadings();
-    if (filteredReadings.length === 0) return null;
-
-    const sum = filteredReadings.reduce((acc, r) => acc + r.value, 0);
-    const average = sum / filteredReadings.length;
-    
-    const inRange = filteredReadings.filter(r => {
-      const settings = settingsStore.userSettings;
-      if (!settings) return false;
-      return r.value >= settings.targetRangeLow && r.value <= settings.targetRangeHigh;
-    }).length;
-
-    const percentage = Math.round((inRange / filteredReadings.length) * 100);
-    const a1c = MedicalCalculator.estimateHbA1c(average);
-
-    return {
-      average: Math.round(average),
-      inRangePercentage: percentage,
-      a1cEstimate: a1c,
-      totalReadings: filteredReadings.length,
-    };
-  };
+  const [editingReading, setEditingReading] = useState<GlucoseReading | null>(
+    null
+  );
 
   const handleEditReading = (reading: GlucoseReading) => {
     setEditingReading(reading);
     setShowEditSheet(true);
   };
 
-  const handleGlucoseSaved = (updatedReading: GlucoseReading) => {
+  const handleGlucoseSaved = () => {
     // Store automatically updates, no manual refresh needed
     setShowEditSheet(false);
     setEditingReading(null);
   };
-
-  const stats = calculateStats();
-  const filteredReadings = getFilteredReadings();
 
   return (
     <SafeBox>
@@ -75,22 +45,13 @@ const HistoryTab = observer(() => {
               </Text>
             </Box>
 
-            <TimeRangeSelector
-              timeRange={timeRange}
-              onTimeRangeChange={setTimeRange}
-            />
+            <TimeRangeSelector />
 
-            {stats && (
-              <StatsCard
-                stats={stats}
-                timeRange={timeRange}
-                glucoseUnit={settingsStore.glucoseUnit}
-              />
-            )}
+            <StatsCard />
 
-            <ChartCard readings={filteredReadings} />
+            <ChartCard />
 
-            <RecentEntries readings={glucoseStore.readings} onEditReading={handleEditReading} />
+            <RecentEntries onEditReading={handleEditReading} />
           </Column>
         </ScrollBox>
       </Container>
@@ -98,15 +59,14 @@ const HistoryTab = observer(() => {
       {/* Glucose Edit Sheet */}
       <GlucoseInputSheet
         isVisible={showEditSheet}
-        onClose={() => {
+        closeSheet={() => {
           setShowEditSheet(false);
           setEditingReading(null);
         }}
-        onSave={handleGlucoseSaved}
         editingReading={editingReading}
       />
     </SafeBox>
   );
-});
+};
 
 export default HistoryTab;

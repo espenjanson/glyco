@@ -1,4 +1,4 @@
-import { observable, action, computed } from "mobx";
+import { action, computed, observable } from "mobx";
 import { InsulinShot } from "../types";
 import { StorageService } from "../utils/storage";
 
@@ -6,6 +6,13 @@ export class InsulinStore {
   @observable shots: InsulinShot[] = [];
   @observable loading = false;
   @observable lastShot: InsulinShot | null = null;
+
+  // Draft shot state for forms
+  @observable draftUnits: string = "";
+  @observable draftType: "rapid" | "long-acting" | "intermediate" = "rapid";
+  @observable draftSite: string = "";
+  @observable draftNotes: string = "";
+  @observable draftSelectedTime: Date = new Date();
 
   constructor() {
     this.loadShots();
@@ -29,7 +36,7 @@ export class InsulinStore {
   addShot(shot: InsulinShot) {
     try {
       StorageService.saveInsulinShot(shot);
-      this.shots = [shot, ...this.shots.filter(s => s.id !== shot.id)];
+      this.shots = [shot, ...this.shots.filter((s) => s.id !== shot.id)];
       this.lastShot = shot;
     } catch (error) {
       console.error("Failed to save insulin shot:", error);
@@ -40,13 +47,13 @@ export class InsulinStore {
   @action
   updateShot(id: string, updates: Partial<InsulinShot>) {
     try {
-      const shot = this.shots.find(s => s.id === id);
+      const shot = this.shots.find((s) => s.id === id);
       if (!shot) throw new Error("Shot not found");
-      
+
       const updatedShot = { ...shot, ...updates };
       StorageService.saveInsulinShot(updatedShot);
-      
-      const index = this.shots.findIndex(s => s.id === id);
+
+      const index = this.shots.findIndex((s) => s.id === id);
       if (index !== -1) {
         this.shots[index] = updatedShot;
       }
@@ -63,7 +70,7 @@ export class InsulinStore {
   deleteShot(id: string) {
     try {
       StorageService.deleteInsulinShot(id);
-      this.shots = this.shots.filter(s => s.id !== id);
+      this.shots = this.shots.filter((s) => s.id !== id);
       if (this.lastShot?.id === id) {
         this.lastShot = this.shots.length > 0 ? this.shots[0] : null;
       }
@@ -75,9 +82,7 @@ export class InsulinStore {
 
   getShotsByDateRange(startDate: Date, endDate: Date): InsulinShot[] {
     return this.shots.filter(
-      shot => 
-        shot.timestamp >= startDate && 
-        shot.timestamp <= endDate
+      (shot) => shot.timestamp >= startDate && shot.timestamp <= endDate
     );
   }
 
@@ -87,7 +92,7 @@ export class InsulinStore {
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
+
     const todayShots = this.getShotsByDateRange(today, tomorrow);
     return todayShots.reduce((total, shot) => total + shot.units, 0);
   }
@@ -98,12 +103,74 @@ export class InsulinStore {
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
+
     const todayShots = this.getShotsByDateRange(today, tomorrow);
     return todayShots.length;
   }
 
   getShotsByType(type: InsulinShot["type"]): InsulinShot[] {
-    return this.shots.filter(shot => shot.type === type);
+    return this.shots.filter((shot) => shot.type === type);
+  }
+
+  // Draft shot management
+  @action
+  resetDraft() {
+    this.draftUnits = "";
+    this.draftType = "rapid";
+    this.draftSite = "";
+    this.draftNotes = "";
+    this.draftSelectedTime = new Date();
+  }
+
+  @action
+  setDraftUnits(units: string) {
+    this.draftUnits = units;
+  }
+
+  @action
+  setDraftType(type: "rapid" | "long-acting" | "intermediate") {
+    this.draftType = type;
+  }
+
+  @action
+  setDraftSite(site: string) {
+    this.draftSite = site;
+  }
+
+  @action
+  setDraftNotes(notes: string) {
+    this.draftNotes = notes;
+  }
+
+  @action
+  setDraftSelectedTime(time: Date) {
+    this.draftSelectedTime = time;
+  }
+
+  @computed
+  get isDraftValid(): boolean {
+    const numUnits = parseFloat(this.draftUnits);
+    return !isNaN(numUnits) && numUnits > 0;
+  }
+
+  @action
+  saveDraftShot() {
+    const numUnits = parseFloat(this.draftUnits);
+    if (isNaN(numUnits) || numUnits <= 0) {
+      throw new Error("Invalid units value");
+    }
+
+    const shot: InsulinShot = {
+      id: Date.now().toString(),
+      units: numUnits,
+      type: this.draftType,
+      injectionSite: this.draftSite.trim() || undefined,
+      notes: this.draftNotes.trim() || undefined,
+      timestamp: this.draftSelectedTime,
+    };
+
+    this.addShot(shot);
+    this.resetDraft();
+    return shot;
   }
 }

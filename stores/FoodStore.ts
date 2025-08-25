@@ -1,5 +1,7 @@
-import { observable, action, computed } from "mobx";
-import { FoodEntry, UserFood, FoodItem } from "../types";
+import { action, computed, observable } from "mobx";
+import { FoodEntry, FoodItem, UserFood } from "../types";
+import { FoodUtils } from "../utils/food";
+import { GlucoseConverter } from "../utils/glucose";
 import { StorageService } from "../utils/storage";
 
 export class FoodStore {
@@ -7,6 +9,13 @@ export class FoodStore {
   @observable userFoods: UserFood[] = [];
   @observable loading = false;
   @observable lastEntry: FoodEntry | null = null;
+
+  // Draft entry state for wizard
+  @observable draftFoods: FoodItem[] = [];
+  @observable draftSelectedTime: Date = new Date();
+  @observable draftNotes: string = "";
+  @observable draftInsulinCalculation: any = null;
+  @observable draftCurrentGlucose: string = "";
 
   constructor() {
     this.loadData();
@@ -18,7 +27,7 @@ export class FoodStore {
     try {
       const entries = StorageService.getFoodEntries();
       const userFoods = StorageService.getUserFoods();
-      
+
       this.entries = entries;
       this.userFoods = userFoods;
       this.lastEntry = entries.length > 0 ? entries[0] : null;
@@ -33,19 +42,19 @@ export class FoodStore {
   addEntry(entry: FoodEntry) {
     try {
       StorageService.saveFoodEntry(entry);
-      
+
       // Update user foods with new foods from this entry
       for (const food of entry.foods) {
         this.addOrUpdateUserFood({
-          id: food.name.toLowerCase().replace(/\s+/g, '-'),
+          id: food.name.toLowerCase().replace(/\s+/g, "-"),
           name: food.name,
           carbsPer100g: food.carbsPer100g,
           lastUsed: new Date(),
-          useCount: 1
+          useCount: 1,
         });
       }
-      
-      this.entries = [entry, ...this.entries.filter(e => e.id !== entry.id)];
+
+      this.entries = [entry, ...this.entries.filter((e) => e.id !== entry.id)];
       this.lastEntry = entry;
     } catch (error) {
       console.error("Failed to save food entry:", error);
@@ -56,13 +65,13 @@ export class FoodStore {
   @action
   updateEntry(id: string, updates: Partial<FoodEntry>) {
     try {
-      const entry = this.entries.find(e => e.id === id);
+      const entry = this.entries.find((e) => e.id === id);
       if (!entry) throw new Error("Entry not found");
-      
+
       const updatedEntry = { ...entry, ...updates };
       StorageService.saveFoodEntry(updatedEntry);
-      
-      const index = this.entries.findIndex(e => e.id === id);
+
+      const index = this.entries.findIndex((e) => e.id === id);
       if (index !== -1) {
         this.entries[index] = updatedEntry;
       }
@@ -79,7 +88,7 @@ export class FoodStore {
   deleteEntry(id: string) {
     try {
       StorageService.deleteFoodEntry(id);
-      this.entries = this.entries.filter(e => e.id !== id);
+      this.entries = this.entries.filter((e) => e.id !== id);
       if (this.lastEntry?.id === id) {
         this.lastEntry = this.entries.length > 0 ? this.entries[0] : null;
       }
@@ -92,8 +101,8 @@ export class FoodStore {
   @action
   addOrUpdateUserFood(userFood: UserFood) {
     try {
-      const existingFood = this.userFoods.find(f => f.id === userFood.id);
-      
+      const existingFood = this.userFoods.find((f) => f.id === userFood.id);
+
       if (existingFood) {
         existingFood.lastUsed = new Date();
         existingFood.useCount += 1;
@@ -113,7 +122,7 @@ export class FoodStore {
   deleteUserFood(id: string) {
     try {
       StorageService.deleteUserFood(id);
-      this.userFoods = this.userFoods.filter(f => f.id !== id);
+      this.userFoods = this.userFoods.filter((f) => f.id !== id);
     } catch (error) {
       console.error("Failed to delete user food:", error);
       throw error;
@@ -122,10 +131,10 @@ export class FoodStore {
 
   searchUserFoods(query: string): UserFood[] {
     if (!query.trim()) return this.userFoods;
-    
+
     const lowerQuery = query.toLowerCase();
     return this.userFoods
-      .filter(food => food.name.toLowerCase().includes(lowerQuery))
+      .filter((food) => food.name.toLowerCase().includes(lowerQuery))
       .sort((a, b) => {
         // Sort by usage count (descending) then by last used (descending)
         if (a.useCount !== b.useCount) {
@@ -137,9 +146,7 @@ export class FoodStore {
 
   getEntriesByDateRange(startDate: Date, endDate: Date): FoodEntry[] {
     return this.entries.filter(
-      entry => 
-        entry.timestamp >= startDate && 
-        entry.timestamp <= endDate
+      (entry) => entry.timestamp >= startDate && entry.timestamp <= endDate
     );
   }
 
@@ -149,7 +156,7 @@ export class FoodStore {
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
+
     const todayEntries = this.getEntriesByDateRange(today, tomorrow);
     return todayEntries.reduce((total, entry) => total + entry.totalCarbs, 0);
   }
@@ -160,8 +167,82 @@ export class FoodStore {
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
+
     const todayEntries = this.getEntriesByDateRange(today, tomorrow);
     return todayEntries.length;
+  }
+
+  // Draft entry management
+  @action
+  resetDraft() {
+    this.draftFoods = [];
+    this.draftSelectedTime = new Date();
+    this.draftNotes = "";
+    this.draftCurrentGlucose = "";
+    this.draftInsulinCalculation = null;
+  }
+
+  @action
+  setDraftTime(time: Date) {
+    this.draftSelectedTime = time;
+  }
+
+  @action
+  addDraftFood(food: FoodItem) {
+    this.draftFoods = [...this.draftFoods, food];
+  }
+
+  @action
+  removeDraftFood(id: string) {
+    this.draftFoods = this.draftFoods.filter((f) => f.id !== id);
+  }
+
+  @action
+  setDraftNotes(notes: string) {
+    this.draftNotes = notes;
+  }
+
+  @action
+  setDraftInsulinCalculation(calculation: any, glucose: string) {
+    this.draftInsulinCalculation = calculation;
+    this.draftCurrentGlucose = glucose;
+  }
+
+  @computed
+  get draftTotalCarbs(): number {
+    return this.draftFoods.reduce((sum, food) => sum + food.totalCarbs, 0);
+  }
+
+  @computed
+  get draftMealType(): "breakfast" | "lunch" | "dinner" | "eveningSnack" {
+    return FoodUtils.getMealTypeByTime(this.draftSelectedTime);
+  }
+
+  @action
+  saveDraftEntry(userGlucoseUnit: "mmol/L" | "mg/dL") {
+    const entry: FoodEntry = {
+      id: Date.now().toString(),
+      foods: [...this.draftFoods],
+      totalCarbs: this.draftTotalCarbs,
+      mealType: this.draftMealType,
+      timestamp: this.draftSelectedTime,
+      notes: this.draftNotes.trim() || undefined,
+    };
+
+    if (this.draftInsulinCalculation && this.draftCurrentGlucose) {
+      const glucose = parseFloat(this.draftCurrentGlucose);
+      const glucoseInMmol = GlucoseConverter.inputToStorage(
+        glucose,
+        userGlucoseUnit
+      );
+      entry.insulinCalculation = {
+        ...this.draftInsulinCalculation,
+        currentGlucose: glucoseInMmol,
+      };
+    }
+
+    this.addEntry(entry);
+    this.resetDraft();
+    return entry;
   }
 }
